@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Icon Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    .canvas-container {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+      gap: 20px;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+  </style>
+</head>
+<body>
+  <h1>Icon Generator for Countries Quiz Extension</h1>
+  <p>Click the button below to generate extension icons.</p>
+  
+  <div class="canvas-container">
+    <div>
+      <h3>16x16</h3>
+      <canvas id="canvas16" width="16" height="16"></canvas>
+    </div>
+    <div>
+      <h3>48x48</h3>
+      <canvas id="canvas48" width="48" height="48"></canvas>
+    </div>
+    <div>
+      <h3>128x128</h3>
+      <canvas id="canvas128" width="128" height="128"></canvas>
+    </div>
+  </div>
+  
+  <button id="generateBtn">Generate Icons</button>
+  <button id="downloadBtn" disabled>Download Icons</button>
+  
+  <script>
+    // Canvas elements
+    const canvas16 = document.getElementById('canvas16');
+    const canvas48 = document.getElementById('canvas48');
+    const canvas128 = document.getElementById('canvas128');
+    
+    // Buttons
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    // Generate icons
+    generateBtn.addEventListener('click', () => {
+      drawIcon(canvas16, 16);
+      drawIcon(canvas48, 48);
+      drawIcon(canvas128, 128);
+      downloadBtn.disabled = false;
+    });
+    
+    // Download icons
+    downloadBtn.addEventListener('click', () => {
+      downloadIcon(canvas16, 'icon16.png');
+      downloadIcon(canvas48, 'icon48.png');
+      downloadIcon(canvas128, 'icon128.png');
+    });
+    
+    // Draw icon on canvas
+    function drawIcon(canvas, size) {
+      const ctx = canvas.getContext('2d');
+      const centerX = size / 2;
+      const centerY = size / 2;
+      const radius = size * 0.4;
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, size, size);
+      
+      // Draw background
+      ctx.fillStyle = '#3498db';
+      ctx.fillRect(0, 0, size, size);
+      
+      // Draw globe
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.fillStyle = '#ecf0f1';
+      ctx.fill();
+      
+      // Draw continent-like shapes
+      ctx.fillStyle = '#2ecc71';
+      
+      // North America-like shape
+      ctx.beginPath();
+      ctx.moveTo(centerX - radius * 0.6, centerY - radius * 0.4);
+      ctx.lineTo(centerX - radius * 0.2, centerY - radius * 0.2);
+      ctx.lineTo(centerX - radius * 0.4, centerY);
+      ctx.lineTo(centerX - radius * 0.7, centerY - radius * 0.1);
+      ctx.closePath();
+      ctx.fill();
+      
+      // South America-like shape
+      ctx.beginPath();
+      ctx.moveTo(centerX - radius * 0.3, centerY + radius * 0.1);
+      ctx.lineTo(centerX - radius * 0.1, centerY + radius * 0.3);
+      ctx.lineTo(centerX - radius * 0.3, centerY + radius * 0.6);
+      ctx.lineTo(centerX - radius * 0.5, centerY + radius * 0.2);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Europe/Africa-like shape
+      ctx.beginPath();
+      ctx.moveTo(centerX + radius * 0.1, centerY - radius * 0.5);
+      ctx.lineTo(centerX + radius * 0.4, centerY - radius * 0.2);
+      ctx.lineTo(centerX + radius * 0.3, centerY + radius * 0.5);
+      ctx.lineTo(centerX - radius * 0.1, centerY + radius * 0.3);
+      ctx.lineTo(centerX - radius * 0.1, centerY - radius * 0.1);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Asia-like shape
+      ctx.beginPath();
+      ctx.moveTo(centerX + radius * 0.5, centerY - radius * 0.3);
+      ctx.lineTo(centerX + radius * 0.7, centerY);
+      ctx.lineTo(centerX + radius * 0.6, centerY + radius * 0.4);
+      ctx.lineTo(centerX + radius * 0.4, centerY + radius * 0.2);
+      ctx.lineTo(centerX + radius * 0.4, centerY - radius * 0.1);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Draw question mark
+      ctx.fillStyle = '#e74c3c';
+      ctx.font = `bold ${size * 0.5}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('?', centerX, centerY);
+      
+      // Add border
+      ctx.strokeStyle = '#2980b9';
+      ctx.lineWidth = size * 0.05;
+      ctx.strokeRect(0, 0, size, size);
+    }
+    
+    // Download canvas as PNG
+    function downloadIcon(canvas, filename) {
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html> 

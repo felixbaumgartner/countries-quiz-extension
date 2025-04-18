@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Countries Quiz</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Countries Quiz</h1>
+      <div class="score-container">
+        Score: <span id="score">0</span>
+      </div>
+    </header>
+    
+    <div class="quiz-container">
+      <div id="quiz-content">
+        <!-- Quiz content will be inserted here -->
+      </div>
+      
+      <div id="flag-container" class="hidden">
+        <img id="flag-image" src="" alt="Country flag">
+      </div>
+      
+      <div id="options-container" class="options-grid">
+        <!-- Options will be inserted here -->
+      </div>
+      
+      <div id="feedback" class="hidden">
+        <!-- Feedback after answering -->
+      </div>
+    </div>
+    
+    <div class="controls">
+      <div class="quiz-type">
+        <button id="quiz-capitals" class="quiz-button active">Capitals</button>
+        <button id="quiz-flags" class="quiz-button">Flags</button>
+        <button id="quiz-countries" class="quiz-button">Countries</button>
+      </div>
+      <button id="next-button" class="action-button">Next Question</button>
+    </div>
+  </div>
+  
+  <script src="data/countries.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html> 
