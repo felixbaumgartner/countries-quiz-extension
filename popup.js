@@ -193,6 +193,8 @@ function checkAnswer(selectedAnswer) {
     feedbackElement.textContent = `Incorrect. The correct answer is ${correctAnswer}.`;
     feedbackElement.style.backgroundColor = '#f8d7da';
     feedbackElement.style.color = '#721c24';
+    currentScore = 0; // reset score on wrong answer
+    updateScoreDisplay();
   }
   
   // Save current score
