@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Countries Quiz</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -9,40 +10,99 @@
   <div class="container">
     <header>
       <h1>Countries Quiz</h1>
-      <div class="score-container">
-        Score: <span id="score">0</span>
+      <div class="header-actions">
+        <button id="settings-button" class="icon-button" aria-label="Settings" title="Settings">
+          ⚙️
+        </button>
+        <button id="stats-button" class="icon-button" aria-label="Statistics" title="Statistics">
+          📊
+        </button>
+        <button id="review-button" class="icon-button" aria-label="Review Missed Questions" title="Review">
+          📝
+        </button>
       </div>
     </header>
-    
+
+    <div class="score-section">
+      <div class="score-container">
+        <div class="score-item">
+          <div class="score-label">Accuracy</div>
+          <div class="score-value" id="score">0</div>%
+        </div>
+        <div class="score-divider"></div>
+        <div class="score-item">
+          <div class="score-label">Streak</div>
+          <div class="score-value" id="streak">0</div>
+        </div>
+        <div class="score-divider"></div>
+        <div class="score-item">
+          <div class="score-label">Correct</div>
+          <div class="score-value">
+            <span id="total-correct">0</span>/<span id="total-questions">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timer (hidden by default) -->
+    <div id="timer-container" class="timer-container hidden">
+      <div class="timer-label">Time:</div>
+      <div class="timer-display" id="timer-display">10</div>
+      <div class="timer-bar">
+        <div class="timer-progress" id="timer-progress"></div>
+      </div>
+    </div>
+
     <div class="quiz-container">
-      <div id="quiz-content">
+      <!-- Loading spinner -->
+      <div id="loading-spinner" class="loading-spinner hidden">
+        <div class="spinner"></div>
+      </div>
+
+      <div id="quiz-content" role="region" aria-live="polite" aria-label="Quiz question">
         <!-- Quiz content will be inserted here -->
       </div>
-      
-      <div id="flag-container" class="hidden">
-        <img id="flag-image" src="" alt="Country flag">
+
+      <div id="flag-container" class="flag-container hidden">
+        <img id="flag-image" src="" alt="Country flag" />
       </div>
-      
-      <div id="options-container" class="options-grid">
+
+      <div id="options-container" class="options-grid" role="group" aria-label="Answer options">
         <!-- Options will be inserted here -->
       </div>
-      
-      <div id="feedback" class="hidden">
+
+      <div id="feedback" class="hidden" role="status" aria-live="polite">
         <!-- Feedback after answering -->
       </div>
     </div>
-    
+
     <div class="controls">
       <div class="quiz-type">
-        <button id="quiz-capitals" class="quiz-button active">Capitals</button>
-        <button id="quiz-flags" class="quiz-button">Flags</button>
-        <button id="quiz-countries" class="quiz-button">Countries</button>
+        <button id="quiz-capitals" class="quiz-button active" aria-pressed="true">
+          🏛️ Capitals
+        </button>
+        <button id="quiz-flags" class="quiz-button" aria-pressed="false">
+          🚩 Flags
+        </button>
+        <button id="quiz-countries" class="quiz-button" aria-pressed="false">
+          🌍 Countries
+        </button>
       </div>
-      <button id="next-button" class="action-button">Next Question</button>
+      <button id="next-button" class="action-button">
+        Next Question →
+      </button>
     </div>
   </div>
-  
+
+  <!-- Load scripts in order -->
   <script src="data/countries.js"></script>
+  <script src="data/regions.js"></script>
+  <script src="data/facts.js"></script>
+  <script src="js/constants.js"></script>
+  <script src="js/storage-manager.js"></script>
+  <script src="js/sound-manager.js"></script>
+  <script src="js/ui-manager.js"></script>
+  <script src="js/quiz-engine.js"></script>
   <script src="popup.js"></script>
 </body>
-</html> 
+</html>

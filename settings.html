@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Countries Quiz - Settings</title>
+  <link rel="stylesheet" href="styles-new.css">
+  <style>
+    body {
+      width: 600px;
+      max-width: 100vw;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .settings-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .settings-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .back-button {
+      background: var(--card-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+
+    .back-button:hover {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .settings-section {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .settings-section h2 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 1.3rem;
+      color: var(--text-color);
+    }
+
+    .setting-item {
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .setting-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .setting-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-color);
+    }
+
+    .setting-description {
+      font-size: 0.9rem;
+      color: var(--text-color);
+      opacity: 0.7;
+      margin-bottom: 12px;
+    }
+
+    .setting-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    select, input[type="number"] {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-color);
+      color: var(--text-color);
+      font-size: 1rem;
+      font-family: inherit;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--border-color);
+      transition: 0.4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--primary-color);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #2980b9;
+    }
+
+    .btn-danger {
+      background-color: var(--danger-color);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background-color: #c0392b;
+    }
+
+    .save-notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--secondary-color);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      animation: slideInRight 0.3s ease-out;
+      z-index: 1000;
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="settings-container">
+    <div class="settings-header">
+      <button class="back-button" onclick="window.close()">← Back</button>
+      <h1>Settings</h1>
+    </div>
+
+    <div class="settings-section">
+      <h2>Quiz Settings</h2>
+
+      <div class="setting-item">
+        <label class="setting-label" for="difficulty">Difficulty Level</label>
+        <div class="setting-description">Choose which countries to include based on difficulty</div>
+        <div class="setting-control">
+          <select id="difficulty">
+            <option value="easy">Easy - Well-known countries</option>
+            <option value="medium">Medium - Mix of countries</option>
+            <option value="hard">Hard - Lesser-known countries</option>
+            <option value="all">All - All countries</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <label class="setting-label" for="region">Region Filter</label>
+        <div class="setting-description">Focus on countries from a specific region</div>
+        <div class="setting-control">
+          <select id="region">
+            <option value="all">All Regions</option>
+            <option value="Africa">Africa</option>
+            <option value="Asia">Asia</option>
+            <option value="Europe">Europe</option>
+            <option value="North America">North America</option>
+            <option value="South America">South America</option>
+            <option value="Oceania">Oceania</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <label class="setting-label">Timed Mode</label>
+        <div class="setting-description">Enable a countdown timer for each question</div>
+        <div class="setting-control">
+          <label class="toggle-switch">
+            <input type="checkbox" id="timed-mode">
+            <span class="slider"></span>
+          </label>
+          <input type="number" id="timer-duration" min="5" max="60" value="10" style="max-width: 100px;">
+          <span>seconds</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h2>Appearance</h2>
+
+      <div class="setting-item">
+        <label class="setting-label" for="theme">Theme</label>
+        <div class="setting-description">Choose between light and dark theme</div>
+        <div class="setting-control">
+          <select id="theme">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h2>Audio</h2>
+
+      <div class="setting-item">
+        <label class="setting-label">Sound Effects</label>
+        <div class="setting-description">Play sounds for correct/incorrect answers</div>
+        <div class="setting-control">
+          <label class="toggle-switch">
+            <input type="checkbox" id="sound-enabled">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h2>Data Management</h2>
+
+      <div class="button-group">
+        <button class="btn btn-primary" id="export-data">Export Data</button>
+        <button class="btn btn-danger" id="reset-stats">Reset Statistics</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data/countries.js"></script>
+  <script src="data/regions.js"></script>
+  <script src="data/facts.js"></script>
+  <script src="js/constants.js"></script>
+  <script src="js/storage-manager.js"></script>
+  <script>
+    // Load current settings
+    async function loadSettings() {
+      try {
+        const settings = await StorageManager.getSettings();
+
+        document.getElementById('difficulty').value = settings.difficulty || 'medium';
+        document.getElementById('region').value = settings.region || 'all';
+        document.getElementById('theme').value = settings.theme || 'light';
+        document.getElementById('timed-mode').checked = settings.timedMode || false;
+        document.getElementById('timer-duration').value = settings.timerDuration || 10;
+        document.getElementById('timer-duration').disabled = !settings.timedMode;
+        document.getElementById('sound-enabled').checked = settings.soundEnabled !== false;
+
+        // Apply theme
+        applyTheme(settings.theme || 'light');
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    }
+
+    // Save settings
+    async function saveSettings() {
+      try {
+        const settings = {
+          difficulty: document.getElementById('difficulty').value,
+          region: document.getElementById('region').value,
+          theme: document.getElementById('theme').value,
+          timedMode: document.getElementById('timed-mode').checked,
+          timerDuration: parseInt(document.getElementById('timer-duration').value),
+          soundEnabled: document.getElementById('sound-enabled').checked
+        };
+
+        await StorageManager.updateSettings(settings);
+        applyTheme(settings.theme);
+        showNotification('Settings saved successfully!');
+      } catch (error) {
+        console.error('Error saving settings:', error);
+        showNotification('Error saving settings', true);
+      }
+    }
+
+    // Apply theme
+    function applyTheme(theme) {
+      document.body.classList.remove('theme-light', 'theme-dark');
+      document.body.classList.add(`theme-${theme}`);
+    }
+
+    // Show notification
+    function showNotification(message, isError = false) {
+      const notification = document.createElement('div');
+      notification.className = 'save-notification';
+      notification.textContent = message;
+      if (isError) {
+        notification.style.backgroundColor = 'var(--danger-color)';
+      }
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        notification.style.animation = 'slideInRight 0.3s ease-out reverse';
+        setTimeout(() => notification.remove(), 300);
+      }, 2000);
+    }
+
+    // Export data
+    async function exportData() {
+      try {
+        const data = await StorageManager.exportData();
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `countries-quiz-data-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showNotification('Data exported successfully!');
+      } catch (error) {
+        console.error('Error exporting data:', error);
+        showNotification('Error exporting data', true);
+      }
+    }
+
+    // Reset statistics
+    async function resetStats() {
+      if (!confirm('Are you sure you want to reset all statistics? This action cannot be undone.')) {
+        return;
+      }
+
+      try {
+        await StorageManager.resetStats();
+        showNotification('Statistics reset successfully!');
+      } catch (error) {
+        console.error('Error resetting stats:', error);
+        showNotification('Error resetting statistics', true);
+      }
+    }
+
+    // Event listeners
+    document.getElementById('difficulty').addEventListener('change', saveSettings);
+    document.getElementById('region').addEventListener('change', saveSettings);
+    document.getElementById('theme').addEventListener('change', saveSettings);
+    document.getElementById('timed-mode').addEventListener('change', (e) => {
+      document.getElementById('timer-duration').disabled = !e.target.checked;
+      saveSettings();
+    });
+    document.getElementById('timer-duration').addEventListener('change', saveSettings);
+    document.getElementById('sound-enabled').addEventListener('change', saveSettings);
+    document.getElementById('export-data').addEventListener('click', exportData);
+    document.getElementById('reset-stats').addEventListener('click', resetStats);
+
+    // Initialize
+    loadSettings();
+  </script>
+</body>
+</html>
