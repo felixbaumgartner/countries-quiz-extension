@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Countries Quiz - Statistics</title>
+  <link rel="stylesheet" href="styles-new.css">
+  <style>
+    body {
+      width: 700px;
+      max-width: 100vw;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .stats-container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .stats-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .back-button {
+      background: var(--card-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+
+    .back-button:hover {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .stats-section {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .stats-section h2 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 1.3rem;
+      color: var(--text-color);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--bg-color);
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--primary-color);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-color);
+      opacity: 0.7;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .quiz-type-stats {
+      display: grid;
+      gap: 12px;
+    }
+
+    .quiz-type-item {
+      background: var(--bg-color);
+      padding: 12px 16px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .quiz-type-name {
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    .quiz-type-accuracy {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+
+    .progress-bar {
+      height: 8px;
+      background-color: var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: var(--primary-color);
+      transition: width 0.3s ease;
+    }
+
+    .history-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      background: var(--bg-color);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .history-item.correct {
+      border-left: 4px solid var(--secondary-color);
+    }
+
+    .history-item.incorrect {
+      border-left: 4px solid var(--danger-color);
+    }
+
+    .history-info {
+      flex: 1;
+    }
+
+    .history-country {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .history-type {
+      font-size: 0.85rem;
+      color: var(--text-color);
+      opacity: 0.7;
+    }
+
+    .history-result {
+      font-size: 1.5rem;
+      margin-right: 8px;
+    }
+
+    .country-stats-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .country-stat-item {
+      background: var(--bg-color);
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .country-name {
+      font-weight: 600;
+    }
+
+    .country-accuracy {
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-color);
+      opacity: 0.5;
+      font-style: italic;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .btn:hover {
+      background-color: #2980b9;
+    }
+  </style>
+</head>
+<body>
+  <div class="stats-container">
+    <div class="stats-header">
+      <button class="back-button" onclick="window.close()">← Back</button>
+      <h1>Statistics</h1>
+    </div>
+
+    <div class="stats-section">
+      <h2>Overall Performance</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="overall-accuracy">0%</div>
+          <div class="stat-label">Accuracy</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="current-streak">0</div>
+          <div class="stat-label">Current Streak</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="total-correct">0</div>
+          <div class="stat-label">Total Correct</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="total-questions">0</div>
+          <div class="stat-label">Total Questions</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-section">
+      <h2>Performance by Quiz Type</h2>
+      <div class="quiz-type-stats" id="quiz-type-stats">
+        <!-- Will be populated dynamically -->
+      </div>
+    </div>
+
+    <div class="stats-section">
+      <h2>Recent Quiz History</h2>
+      <div class="history-list" id="history-list">
+        <!-- Will be populated dynamically -->
+      </div>
+    </div>
+
+    <div class="stats-section">
+      <h2>Countries You Struggle With</h2>
+      <div class="country-stats-list" id="country-stats-list">
+        <!-- Will be populated dynamically -->
+      </div>
+    </div>
+
+    <div class="stats-section">
+      <h2>Missed Questions Review</h2>
+      <p>You have <strong id="missed-count">0</strong> missed questions to review.</p>
+      <button class="btn" id="review-button">Start Review Mode</button>
+      <button class="btn" id="clear-missed" style="background-color: var(--danger-color); margin-left: 8px;">Clear Missed Questions</button>
+    </div>
+  </div>
+
+  <script src="data/countries.js"></script>
+  <script src="data/regions.js"></script>
+  <script src="data/facts.js"></script>
+  <script src="js/constants.js"></script>
+  <script src="js/storage-manager.js"></script>
+  <script>
+    // Load and display statistics
+    async function loadStats() {
+      try {
+        const [score, streak, totalCorrect, totalQuestions, stats, missedQuestions] = await Promise.all([
+          StorageManager.getScore(),
+          StorageManager.getStreak(),
+          StorageManager.getTotalCorrect(),
+          StorageManager.getTotalQuestions(),
+          StorageManager.getStats(),
+          StorageManager.getMissedQuestions()
+        ]);
+
+        // Overall stats
+        document.getElementById('overall-accuracy').textContent = score + '%';
+        document.getElementById('current-streak').textContent = streak;
+        document.getElementById('total-correct').textContent = totalCorrect;
+        document.getElementById('total-questions').textContent = totalQuestions;
+
+        // Quiz type stats
+        displayQuizTypeStats(stats.byQuizType);
+
+        // Recent history
+        displayHistory(stats.quizHistory);
+
+        // Country stats
+        displayCountryStats(stats.byCountry);
+
+        // Missed questions count
+        document.getElementById('missed-count').textContent = missedQuestions.length;
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+    }
+
+    // Display quiz type statistics
+    function displayQuizTypeStats(byQuizType) {
+      const container = document.getElementById('quiz-type-stats');
+      container.innerHTML = '';
+
+      const types = [
+        { key: 'capitals', emoji: '🏛️', name: 'Capitals' },
+        { key: 'flags', emoji: '🚩', name: 'Flags' },
+        { key: 'countries', emoji: '🌍', name: 'Countries' }
+      ];
+
+      types.forEach(type => {
+        const data = byQuizType[type.key];
+        const accuracy = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
+
+        const item = document.createElement('div');
+        item.className = 'quiz-type-item';
+        item.innerHTML = `
+          <div>
+            <div class="quiz-type-name">${type.emoji} ${type.name}</div>
+            <div class="quiz-type-details" style="font-size: 0.9rem; opacity: 0.7; margin-top: 4px;">
+              ${data.correct} / ${data.total} correct
+            </div>
+          </div>
+          <div class="quiz-type-accuracy">${accuracy}%</div>
+        `;
+
+        const progressBar = document.createElement('div');
+        progressBar.className = 'progress-bar';
+        progressBar.innerHTML = `<div class="progress-fill" style="width: ${accuracy}%"></div>`;
+
+        const wrapper = document.createElement('div');
+        wrapper.appendChild(item);
+        wrapper.appendChild(progressBar);
+        wrapper.style.marginBottom = '12px';
+
+        container.appendChild(wrapper);
+      });
+    }
+
+    // Display quiz history
+    function displayHistory(history) {
+      const container = document.getElementById('history-list');
+      container.innerHTML = '';
+
+      if (history.length === 0) {
+        container.innerHTML = '<div class="no-data">No quiz history yet. Start playing to see your history!</div>';
+        return;
+      }
+
+      history.slice(0, 20).forEach(item => {
+        const div = document.createElement('div');
+        div.className = `history-item ${item.correct ? 'correct' : 'incorrect'}`;
+
+        const date = new Date(item.timestamp);
+        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        div.innerHTML = `
+          <div class="history-info">
+            <div class="history-country">${item.country}</div>
+            <div class="history-type">${item.quizType} • ${timeStr}</div>
+          </div>
+          <div class="history-result">${item.correct ? '✓' : '✗'}</div>
+        `;
+
+        container.appendChild(div);
+      });
+    }
+
+    // Display country statistics
+    function displayCountryStats(byCountry) {
+      const container = document.getElementById('country-stats-list');
+      container.innerHTML = '';
+
+      // Find countries with low accuracy
+      const countryArray = Object.entries(byCountry)
+        .map(([name, data]) => ({
+          name,
+          accuracy: data.total > 0 ? (data.correct / data.total) * 100 : 0,
+          total: data.total
+        }))
+        .filter(c => c.total >= 2) // Only show countries with at least 2 attempts
+        .sort((a, b) => a.accuracy - b.accuracy);
+
+      if (countryArray.length === 0) {
+        container.innerHTML = '<div class="no-data">Play more quizzes to see which countries you struggle with!</div>';
+        return;
+      }
+
+      countryArray.slice(0, 10).forEach(country => {
+        const div = document.createElement('div');
+        div.className = 'country-stat-item';
+        div.innerHTML = `
+          <div class="country-name">${country.name}</div>
+          <div class="country-accuracy">${Math.round(country.accuracy)}% (${country.total} attempts)</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Review button click
+    document.getElementById('review-button').addEventListener('click', () => {
+      // Open popup and start review mode
+      // Since we can't directly call popup functions, we'll just close and let user click review in popup
+      window.close();
+    });
+
+    // Clear missed questions
+    document.getElementById('clear-missed').addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to clear all missed questions?')) {
+        return;
+      }
+
+      try {
+        await StorageManager.clearMissedQuestions();
+        document.getElementById('missed-count').textContent = '0';
+        alert('Missed questions cleared!');
+      } catch (error) {
+        console.error('Error clearing missed questions:', error);
+        alert('Error clearing missed questions');
+      }
+    });
+
+    // Initialize
+    loadStats();
+
+    // Apply theme
+    (async () => {
+      try {
+        const settings = await StorageManager.getSettings();
+        document.body.classList.remove('theme-light', 'theme-dark');
+        document.body.classList.add(`theme-${settings.theme || 'light'}`);
+      } catch (error) {
+        console.error('Error loading theme:', error);
+      }
+    })();
+  </script>
+</body>
+</html>

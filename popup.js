@@ -1,229 +1,316 @@
-// Global variables
-let currentScore = 0;
-let currentQuestion = null;
-let quizType = 'capitals'; // default: 'capitals', 'flags', or 'countries'
+/**
+ * Countries Quiz - Main Popup Script
+ * Integrates all modules for the quiz functionality
+ */
 
-// DOM elements
-const scoreElement = document.getElementById('score');
-const quizContentElement = document.getElementById('quiz-content');
-const flagContainerElement = document.getElementById('flag-container');
-const flagImageElement = document.getElementById('flag-image');
-const optionsContainerElement = document.getElementById('options-container');
-const feedbackElement = document.getElementById('feedback');
-const nextButton = document.getElementById('next-button');
+// Global state
+let currentScores = {
+  score: 0,
+  streak: 0,
+  totalCorrect: 0,
+  totalQuestions: 0
+};
 
-// Quiz type buttons
-const quizCapitalsButton = document.getElementById('quiz-capitals');
-const quizFlagsButton = document.getElementById('quiz-flags');
-const quizCountriesButton = document.getElementById('quiz-countries');
+/**
+ * Initialize the application
+ */
+async function init() {
+  try {
+    // Initialize UI Manager
+    uiManager.init();
 
-// Initialization
-document.addEventListener('DOMContentLoaded', () => {
-  // Load saved score from storage
-  chrome.storage.local.get(['countriesQuizScore'], (result) => {
-    if (result.countriesQuizScore) {
-      currentScore = result.countriesQuizScore;
-      updateScoreDisplay();
+    // Initialize Sound Manager (requires user interaction)
+    soundManager.init();
+
+    // Initialize Quiz Engine
+    await quizEngine.init();
+
+    // Validate data
+    if (!quizEngine.validateData()) {
+      uiManager.showError('Failed to load quiz data');
+      return;
     }
-  });
 
-  // Set up event listeners
-  nextButton.addEventListener('click', generateNewQuestion);
-  quizCapitalsButton.addEventListener('click', () => setQuizType('capitals'));
-  quizFlagsButton.addEventListener('click', () => setQuizType('flags'));
-  quizCountriesButton.addEventListener('click', () => setQuizType('countries'));
+    // Load saved scores
+    await loadScores();
 
-  // Generate first question
-  generateNewQuestion();
-});
+    // Apply theme
+    const settings = quizEngine.getSettings();
+    uiManager.applyTheme(settings.theme);
+    soundManager.setEnabled(settings.soundEnabled);
 
-// Set quiz type
+    // Set up event listeners
+    setupEventListeners();
+
+    // Generate first question
+    generateNewQuestion();
+  } catch (error) {
+    console.error('Initialization error:', error);
+    uiManager.showError('Failed to initialize quiz');
+  }
+}
+
+/**
+ * Load scores from storage
+ */
+async function loadScores() {
+  try {
+    const [score, streak, totalCorrect, totalQuestions] = await Promise.all([
+      StorageManager.getScore(),
+      StorageManager.getStreak(),
+      StorageManager.getTotalCorrect(),
+      StorageManager.getTotalQuestions()
+    ]);
+
+    currentScores = {
+      score,
+      streak,
+      totalCorrect,
+      totalQuestions
+    };
+
+    uiManager.updateScores(currentScores);
+  } catch (error) {
+    console.error('Error loading scores:', error);
+  }
+}
+
+/**
+ * Set up event listeners
+ */
+function setupEventListeners() {
+  // Next question button
+  if (uiManager.elements.nextButton) {
+    uiManager.elements.nextButton.addEventListener('click', generateNewQuestion);
+  }
+
+  // Quiz type buttons
+  if (uiManager.elements.quizCapitals) {
+    uiManager.elements.quizCapitals.addEventListener('click', () => setQuizType(QUIZ_TYPES.CAPITALS));
+  }
+  if (uiManager.elements.quizFlags) {
+    uiManager.elements.quizFlags.addEventListener('click', () => setQuizType(QUIZ_TYPES.FLAGS));
+  }
+  if (uiManager.elements.quizCountries) {
+    uiManager.elements.quizCountries.addEventListener('click', () => setQuizType(QUIZ_TYPES.COUNTRIES));
+  }
+
+  // Settings button
+  if (uiManager.elements.settingsButton) {
+    uiManager.elements.settingsButton.addEventListener('click', openSettings);
+  }
+
+  // Stats button
+  if (uiManager.elements.statsButton) {
+    uiManager.elements.statsButton.addEventListener('click', openStats);
+  }
+
+  // Review button
+  if (uiManager.elements.reviewButton) {
+    uiManager.elements.reviewButton.addEventListener('click', startReviewMode);
+  }
+
+  // Option buttons - use event delegation
+  if (uiManager.elements.optionsContainer) {
+    uiManager.elements.optionsContainer.addEventListener('click', handleOptionClick);
+    uiManager.elements.optionsContainer.addEventListener('keydown', handleOptionKeydown);
+  }
+}
+
+/**
+ * Set quiz type
+ * @param {string} type - Quiz type
+ */
 function setQuizType(type) {
-  quizType = type;
-  
-  // Update active button UI
-  quizCapitalsButton.classList.toggle('active', type === 'capitals');
-  quizFlagsButton.classList.toggle('active', type === 'flags');
-  quizCountriesButton.classList.toggle('active', type === 'countries');
-  
-  // Generate new question of the selected type
+  quizEngine.setQuizType(type);
+  uiManager.updateActiveQuizType(type);
   generateNewQuestion();
 }
 
-// Generate a new question based on quiz type
+/**
+ * Generate a new question
+ */
 function generateNewQuestion() {
-  // Reset feedback and UI
-  feedbackElement.classList.add('hidden');
-  optionsContainerElement.innerHTML = '';
-  
-  // Enable click on options
-  optionsContainerElement.style.pointerEvents = 'auto';
-  
-  // Get random countries for the question
-  const correctCountry = getRandomCountry();
-  const options = [correctCountry];
-  
-  // Add 3 more random countries as wrong options
-  while (options.length < 4) {
-    const randomCountry = getRandomCountry();
-    if (!options.some(country => country.name === randomCountry.name)) {
-      options.push(randomCountry);
+  try {
+    // Hide feedback
+    uiManager.hideFeedback();
+
+    // Clear highlights
+    uiManager.clearHighlights();
+
+    // Stop timer if running
+    uiManager.stopTimer();
+
+    // Generate question
+    const question = quizEngine.generateQuestion();
+    const quizType = quizEngine.getQuizType();
+
+    // Render question based on type
+    switch (quizType) {
+      case QUIZ_TYPES.CAPITALS:
+        uiManager.renderCapitalsQuestion(question);
+        break;
+      case QUIZ_TYPES.FLAGS:
+        uiManager.renderFlagsQuestion(question);
+        break;
+      case QUIZ_TYPES.COUNTRIES:
+        uiManager.renderCountriesQuestion(question);
+        break;
+    }
+
+    // Start timer if enabled
+    const settings = quizEngine.getSettings();
+    if (settings.timedMode) {
+      uiManager.startTimer(
+        settings.timerDuration,
+        (timeLeft) => {
+          if (timeLeft <= 3 && timeLeft > 0 && settings.soundEnabled) {
+            soundManager.playTick();
+          }
+        },
+        () => {
+          // Time's up - treat as incorrect
+          const result = quizEngine.checkAnswer('');
+          handleAnswerResult(result, '');
+        }
+      );
+    }
+
+    // Update review mode display
+    if (quizEngine.isReviewMode()) {
+      const remaining = quizEngine.getRemainingReviewCount();
+      uiManager.elements.quizContent.innerHTML += ` <span class="review-badge">Review Mode (${remaining} left)</span>`;
+    }
+  } catch (error) {
+    console.error('Error generating question:', error);
+    uiManager.showError(error.message || 'Failed to generate question');
+  }
+}
+
+/**
+ * Handle option button click
+ * @param {Event} event - Click event
+ */
+function handleOptionClick(event) {
+  const button = event.target.closest('.option-button');
+  if (!button) return;
+
+  const answer = button.dataset.value;
+  if (answer) {
+    checkAnswer(answer);
+  }
+}
+
+/**
+ * Handle keyboard navigation for options
+ * @param {Event} event - Keydown event
+ */
+function handleOptionKeydown(event) {
+  const button = event.target.closest('.option-button');
+  if (!button) return;
+
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    const answer = button.dataset.value;
+    if (answer) {
+      checkAnswer(answer);
     }
   }
-  
-  // Shuffle options
-  shuffleArray(options);
-  
-  // Set the current question
-  currentQuestion = {
-    correctCountry,
-    options
-  };
-  
-  // Render the question based on quiz type
-  if (quizType === 'capitals') {
-    renderCapitalsQuestion();
-  } else if (quizType === 'flags') {
-    renderFlagsQuestion();
-  } else {
-    renderCountriesQuestion();
+}
+
+/**
+ * Check answer
+ * @param {string} selectedAnswer - User's answer
+ */
+async function checkAnswer(selectedAnswer) {
+  try {
+    // Stop timer
+    uiManager.stopTimer();
+
+    // Check answer
+    const result = quizEngine.checkAnswer(selectedAnswer);
+
+    // Handle result
+    await handleAnswerResult(result, selectedAnswer);
+  } catch (error) {
+    console.error('Error checking answer:', error);
+    uiManager.showError('Failed to check answer');
   }
 }
 
-// Render a "What's the capital of X?" question
-function renderCapitalsQuestion() {
-  flagContainerElement.classList.add('hidden');
-  quizContentElement.textContent = `What is the capital of ${currentQuestion.correctCountry.name}?`;
-  
-  currentQuestion.options.forEach(country => {
-    const optionButton = createOptionButton(country.capital, () => checkAnswer(country.capital));
-    optionsContainerElement.appendChild(optionButton);
-  });
-}
-
-// Render a "Which country does this flag belong to?" question
-function renderFlagsQuestion() {
-  flagContainerElement.classList.remove('hidden');
-  flagImageElement.src = currentQuestion.correctCountry.flag;
-  quizContentElement.textContent = 'Which country does this flag belong to?';
-  
-  currentQuestion.options.forEach(country => {
-    const optionButton = createOptionButton(country.name, () => checkAnswer(country.name));
-    optionsContainerElement.appendChild(optionButton);
-  });
-}
-
-// Render a "What's the flag of X?" question
-function renderCountriesQuestion() {
-  flagContainerElement.classList.add('hidden');
-  quizContentElement.textContent = `What is the flag of ${currentQuestion.correctCountry.name}?`;
-  
-  currentQuestion.options.forEach(country => {
-    const optionButton = document.createElement('div');
-    optionButton.className = 'option-button';
-    
-    const flagImg = document.createElement('img');
-    flagImg.src = country.flag;
-    flagImg.alt = `Flag of ${country.name}`;
-    flagImg.style.width = '100%';
-    flagImg.style.maxHeight = '50px';
-    flagImg.style.objectFit = 'contain';
-    
-    optionButton.appendChild(flagImg);
-    optionButton.addEventListener('click', () => checkAnswer(country.name));
-    optionsContainerElement.appendChild(optionButton);
-  });
-}
-
-// Create an option button with click handler
-function createOptionButton(text, clickHandler) {
-  const button = document.createElement('div');
-  button.className = 'option-button';
-  button.textContent = text;
-  button.dataset.value = text; // Store the original value as a data attribute
-  button.addEventListener('click', clickHandler);
-  return button;
-}
-
-// Check if the answer is correct
-function checkAnswer(selectedAnswer) {
-  // Disable further clicks on options
-  optionsContainerElement.style.pointerEvents = 'none';
-  
-  // Get the correct answer based on quiz type
-  let correctAnswer;
-  if (quizType === 'capitals') {
-    correctAnswer = currentQuestion.correctCountry.capital;
-  } else if (quizType === 'flags') {
-    correctAnswer = currentQuestion.correctCountry.name;
-  } else { // countries
-    correctAnswer = currentQuestion.correctCountry.name;
-  }
-  
-  // Find the selected option button
-  const optionButtons = optionsContainerElement.querySelectorAll('.option-button');
-  
-  // Highlight correct/incorrect answers
-  optionButtons.forEach(button => {
-    // Use dataset.value instead of textContent for comparison
-    const buttonValue = button.dataset.value || '';
-    const buttonCountry = button.querySelector('img')?.alt?.replace('Flag of ', '') || '';
-    const valueToCheck = buttonValue || buttonCountry;
-    
-    // Normalize strings for comparison (remove accents for comparison)
-    if (normalizeString(valueToCheck) === normalizeString(correctAnswer)) {
-      button.classList.add('correct');
-    } else if (normalizeString(valueToCheck) === normalizeString(selectedAnswer)) {
-      button.classList.add('incorrect');
+/**
+ * Handle answer result
+ * @param {Object} result - Result from quiz engine
+ * @param {string} selectedAnswer - User's selected answer
+ */
+async function handleAnswerResult(result, selectedAnswer) {
+  // Play sound
+  const settings = quizEngine.getSettings();
+  if (settings.soundEnabled) {
+    if (result.correct) {
+      soundManager.playCorrect();
+    } else {
+      soundManager.playIncorrect();
     }
-  });
-  
-  // Provide feedback
-  feedbackElement.classList.remove('hidden');
-  
-  if (normalizeString(selectedAnswer) === normalizeString(correctAnswer)) {
-    // Correct answer
-    feedbackElement.textContent = 'Correct! ★';
-    feedbackElement.style.backgroundColor = '#d4edda';
-    feedbackElement.style.color = '#155724';
-    currentScore++;
-    updateScoreDisplay();
-  } else {
-    // Incorrect answer
-    feedbackElement.textContent = `Incorrect. The correct answer is ${correctAnswer}.`;
-    feedbackElement.style.backgroundColor = '#f8d7da';
-    feedbackElement.style.color = '#721c24';
-    currentScore = 0; // reset score on wrong answer
-    updateScoreDisplay();
   }
-  
-  // Save current score
-  chrome.storage.local.set({ countriesQuizScore: currentScore });
-}
 
-// Helper function to normalize strings for comparison (handles special characters)
-function normalizeString(str) {
-  if (!str) return '';
-  // Keep the original string for display, but normalize for comparison
-  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-}
+  // Highlight answers
+  uiManager.highlightAnswers(selectedAnswer, result.correctAnswer);
 
-// Update the score display
-function updateScoreDisplay() {
-  scoreElement.textContent = currentScore;
-}
+  // Show feedback
+  uiManager.showFeedback(result.correct, result.correctAnswer, result.funFact);
 
-// Helper function to get a random country
-function getRandomCountry() {
-  const randomIndex = Math.floor(Math.random() * countriesData.length);
-  return countriesData[randomIndex];
-}
+  // Update scores
+  try {
+    const updatedScores = await StorageManager.updateScore(
+      result.correct,
+      quizEngine.getQuizType(),
+      result.country,
+      selectedAnswer,
+      result.correctAnswer
+    );
 
-// Helper function to shuffle an array
-function shuffleArray(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+    currentScores = updatedScores;
+    uiManager.updateScores(currentScores);
+  } catch (error) {
+    console.error('Error updating scores:', error);
   }
-  return array;
-} 
+}
+
+/**
+ * Open settings page
+ */
+function openSettings() {
+  window.open(chrome.runtime.getURL('settings.html'), '_blank');
+}
+
+/**
+ * Open statistics page
+ */
+function openStats() {
+  window.open(chrome.runtime.getURL('stats.html'), '_blank');
+}
+
+/**
+ * Start review mode
+ */
+async function startReviewMode() {
+  try {
+    const missedQuestions = await StorageManager.getMissedQuestions();
+
+    if (missedQuestions.length === 0) {
+      uiManager.showFeedback(true, 'No missed questions to review!');
+      setTimeout(() => uiManager.hideFeedback(), 2000);
+      return;
+    }
+
+    quizEngine.startReviewMode(missedQuestions);
+    generateNewQuestion();
+  } catch (error) {
+    console.error('Error starting review mode:', error);
+    uiManager.showError('Failed to start review mode');
+  }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', init);

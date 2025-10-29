@@ -1,0 +1,54 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "webextensions": true
+  },
+  "extends": "eslint:recommended",
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "module"
+  },
+  "rules": {
+    "indent": ["error", 2],
+    "linebreak-style": ["error", "unix"],
+    "quotes": ["error", "single", { "avoidEscape": true }],
+    "semi": ["error", "always"],
+    "no-unused-vars": ["warn"],
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "prefer-const": "error",
+    "no-var": "error",
+    "eqeqeq": ["error", "always"],
+    "curly": ["error", "all"],
+    "brace-style": ["error", "1tbs"],
+    "comma-dangle": ["error", "never"],
+    "arrow-spacing": "error",
+    "space-before-function-paren": ["error", {
+      "anonymous": "never",
+      "named": "never",
+      "asyncArrow": "always"
+    }]
+  },
+  "globals": {
+    "chrome": "readonly",
+    "countriesData": "readonly",
+    "countryRegions": "readonly",
+    "countryFacts": "readonly",
+    "QUIZ_CONFIG": "readonly",
+    "QUIZ_TYPES": "readonly",
+    "DIFFICULTY": "readonly",
+    "REGIONS": "readonly",
+    "THEMES": "readonly",
+    "STORAGE_KEYS": "readonly",
+    "DEFAULT_SETTINGS": "readonly",
+    "SOUNDS": "readonly",
+    "UI_CLASSES": "readonly",
+    "StorageManager": "readonly",
+    "SoundManager": "readonly",
+    "soundManager": "readonly",
+    "UIManager": "readonly",
+    "uiManager": "readonly",
+    "QuizEngine": "readonly",
+    "quizEngine": "readonly"
+  }
+}
