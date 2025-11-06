@@ -115,6 +115,9 @@ function setupEventListeners() {
     uiManager.elements.optionsContainer.addEventListener('click', handleOptionClick);
     uiManager.elements.optionsContainer.addEventListener('keydown', handleOptionKeydown);
   }
+
+  // Global keyboard shortcut for Next Question (Enter or Space when feedback is shown)
+  document.addEventListener('keydown', handleGlobalKeydown);
 }
 
 /**
@@ -219,6 +222,25 @@ function handleOptionKeydown(event) {
 }
 
 /**
+ * Handle global keyboard shortcuts
+ * @param {Event} event - Keydown event
+ */
+function handleGlobalKeydown(event) {
+  // Only trigger when feedback is visible (after answering)
+  const feedback = document.getElementById('feedback');
+  if (!feedback || feedback.classList.contains('hidden')) return;
+
+  // Prevent if user is typing in an input or textarea
+  if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return;
+
+  // Trigger next question on Enter or Space
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    generateNewQuestion();
+  }
+}
+
+/**
  * Check answer
  * @param {string} selectedAnswer - User's answer
  */
@@ -259,6 +281,16 @@ async function handleAnswerResult(result, selectedAnswer) {
 
   // Show feedback
   uiManager.showFeedback(result.correct, result.correctAnswer, result.funFact);
+
+  // Scroll to Next button for better UX
+  setTimeout(() => {
+    if (uiManager.elements.nextButton) {
+      uiManager.elements.nextButton.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      });
+    }
+  }, 300); // Small delay to allow feedback to render
 
   // Update scores
   try {
