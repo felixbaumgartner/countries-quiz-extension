@@ -381,6 +381,25 @@ h1 {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  position: sticky;
+  bottom: 0;
+  background-color: var(--bg-color);
+  padding: 12px 0 0 0;
+  margin-top: 12px;
+  z-index: 10;
+  border-top: 1px solid transparent;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.controls::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: -16px;
+  right: -16px;
+  height: 20px;
+  background: linear-gradient(to bottom, transparent, var(--bg-color));
+  pointer-events: none;
 }
 
 .quiz-type {
@@ -417,22 +436,29 @@ h1 {
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 10px 20px;
+  padding: 12px 24px;
   cursor: pointer;
   font-weight: bold;
-  font-size: 0.95rem;
+  font-size: 1rem;
   transition: all 0.2s;
   white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .action-button:hover {
   background-color: #27ae60;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .action-button:active {
   transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-button:focus-visible {
+  outline: 3px solid var(--secondary-color);
+  outline-offset: 2px;
 }
 
 /* Utility Classes */
