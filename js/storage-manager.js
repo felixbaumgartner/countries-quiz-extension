@@ -264,6 +264,28 @@ class StorageManager {
   }
 
   /**
+   * Set flag to start review mode
+   * @param {boolean} value - Whether to start review mode
+   * @returns {Promise<void>}
+   */
+  static async setStartReviewMode(value) {
+    await this.set({ [STORAGE_KEYS.START_REVIEW_MODE]: value });
+  }
+
+  /**
+   * Get and clear the start review mode flag
+   * @returns {Promise<boolean>}
+   */
+  static async getAndClearStartReviewMode() {
+    const result = await this.get(STORAGE_KEYS.START_REVIEW_MODE);
+    const shouldStart = result[STORAGE_KEYS.START_REVIEW_MODE] || false;
+    if (shouldStart) {
+      await this.set({ [STORAGE_KEYS.START_REVIEW_MODE]: false });
+    }
+    return shouldStart;
+  }
+
+  /**
    * Export all data as JSON
    * @returns {Promise<string>}
    */

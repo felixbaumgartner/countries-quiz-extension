@@ -42,8 +42,14 @@ async function init() {
     // Set up event listeners
     setupEventListeners();
 
-    // Generate first question
-    generateNewQuestion();
+    // Check if we should start review mode
+    const shouldStartReview = await StorageManager.getAndClearStartReviewMode();
+    if (shouldStartReview) {
+      await startReviewMode();
+    } else {
+      // Generate first question
+      generateNewQuestion();
+    }
   } catch (error) {
     console.error('Initialization error:', error);
     uiManager.showError('Failed to initialize quiz');
@@ -332,7 +338,10 @@ async function startReviewMode() {
 
     if (missedQuestions.length === 0) {
       uiManager.showFeedback(true, 'No missed questions to review!');
-      setTimeout(() => uiManager.hideFeedback(), 2000);
+      setTimeout(() => {
+        uiManager.hideFeedback();
+        generateNewQuestion();
+      }, 2000);
       return;
     }
 
