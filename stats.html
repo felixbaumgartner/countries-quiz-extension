@@ -292,7 +292,9 @@
         ]);
 
         // Overall stats
-        document.getElementById('overall-accuracy').textContent = score + '%';
+        // Calculate accuracy from actual totalCorrect/totalQuestions to ensure it's always accurate
+        const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+        document.getElementById('overall-accuracy').textContent = accuracy + '%';
         document.getElementById('current-streak').textContent = streak;
         document.getElementById('total-correct').textContent = totalCorrect;
         document.getElementById('total-questions').textContent = totalQuestions;
