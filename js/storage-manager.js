@@ -312,6 +312,77 @@ class StorageManager {
   }
 
   /**
+   * Initialize all storage with default values if not present
+   * @returns {Promise<void>}
+   */
+  static async initializeStorage() {
+    console.log('Initializing storage...');
+    const data = await this.get([
+      STORAGE_KEYS.SCORE,
+      STORAGE_KEYS.STREAK,
+      STORAGE_KEYS.TOTAL_CORRECT,
+      STORAGE_KEYS.TOTAL_QUESTIONS,
+      STORAGE_KEYS.SETTINGS,
+      STORAGE_KEYS.STATS,
+      STORAGE_KEYS.MISSED_QUESTIONS
+    ]);
+
+    const updates = {};
+
+    // Initialize score if missing
+    if (data[STORAGE_KEYS.SCORE] === undefined) {
+      updates[STORAGE_KEYS.SCORE] = 0;
+    }
+
+    // Initialize streak if missing
+    if (data[STORAGE_KEYS.STREAK] === undefined) {
+      updates[STORAGE_KEYS.STREAK] = 0;
+    }
+
+    // Initialize total correct if missing
+    if (data[STORAGE_KEYS.TOTAL_CORRECT] === undefined) {
+      updates[STORAGE_KEYS.TOTAL_CORRECT] = 0;
+    }
+
+    // Initialize total questions if missing
+    if (data[STORAGE_KEYS.TOTAL_QUESTIONS] === undefined) {
+      updates[STORAGE_KEYS.TOTAL_QUESTIONS] = 0;
+    }
+
+    // Initialize settings if missing
+    if (!data[STORAGE_KEYS.SETTINGS]) {
+      updates[STORAGE_KEYS.SETTINGS] = DEFAULT_SETTINGS;
+    }
+
+    // Initialize stats if missing
+    if (!data[STORAGE_KEYS.STATS]) {
+      updates[STORAGE_KEYS.STATS] = {
+        byQuizType: {
+          capitals: { correct: 0, total: 0 },
+          flags: { correct: 0, total: 0 },
+          countries: { correct: 0, total: 0 }
+        },
+        byCountry: {},
+        quizHistory: [],
+        startDate: new Date().toISOString()
+      };
+    }
+
+    // Initialize missed questions if missing
+    if (!data[STORAGE_KEYS.MISSED_QUESTIONS]) {
+      updates[STORAGE_KEYS.MISSED_QUESTIONS] = [];
+    }
+
+    // Apply updates if any
+    if (Object.keys(updates).length > 0) {
+      console.log('Applying storage updates:', updates);
+      await this.set(updates);
+    }
+
+    console.log('Storage initialization complete');
+  }
+
+  /**
    * Export all data as JSON
    * @returns {Promise<string>}
    */

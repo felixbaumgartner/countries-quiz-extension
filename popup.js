@@ -16,6 +16,11 @@ let currentScores = {
  */
 async function init() {
   try {
+    console.log('Initializing popup...');
+
+    // Initialize storage first
+    await StorageManager.initializeStorage();
+
     // Initialize UI Manager
     uiManager.init();
 
