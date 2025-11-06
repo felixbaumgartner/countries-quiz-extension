@@ -416,10 +416,27 @@
     }
 
     // Review button click
-    document.getElementById('review-button').addEventListener('click', () => {
-      // Open popup and start review mode
-      // Since we can't directly call popup functions, we'll just close and let user click review in popup
-      window.close();
+    document.getElementById('review-button').addEventListener('click', async () => {
+      try {
+        const missedQuestions = await StorageManager.getMissedQuestions();
+
+        if (missedQuestions.length === 0) {
+          alert('No missed questions to review!');
+          return;
+        }
+
+        // Set flag to start review mode
+        await StorageManager.setStartReviewMode(true);
+
+        // Show message to user
+        alert(`Review mode will start when you open the extension popup. You have ${missedQuestions.length} question(s) to review.`);
+
+        // Close the stats window
+        window.close();
+      } catch (error) {
+        console.error('Error starting review mode:', error);
+        alert('Error starting review mode. Please try again.');
+      }
     });
 
     // Clear missed questions

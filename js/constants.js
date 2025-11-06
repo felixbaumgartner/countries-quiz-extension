@@ -50,7 +50,8 @@ const STORAGE_KEYS = {
   TOTAL_QUESTIONS: 'countriesQuizTotalQuestions',
   SETTINGS: 'countriesQuizSettings',
   STATS: 'countriesQuizStats',
-  MISSED_QUESTIONS: 'countriesQuizMissedQuestions'
+  MISSED_QUESTIONS: 'countriesQuizMissedQuestions',
+  START_REVIEW_MODE: 'countriesQuizStartReviewMode'
 };
 
 // Default settings
