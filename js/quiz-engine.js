@@ -123,6 +123,10 @@ class QuizEngine {
   generateReviewQuestion() {
     const missedQuestion = this.reviewQuestions.shift();
     this.currentReviewQuestion = missedQuestion; // Store for later removal
+
+    // Update quiz type to match the missed question
+    this.quizType = missedQuestion.quizType;
+
     const correctCountry = this.countriesData.find(c => c.name === missedQuestion.country);
 
     if (!correctCountry) {

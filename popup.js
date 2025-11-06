@@ -326,12 +326,16 @@ async function handleAnswerResult(result, selectedAnswer) {
 
     // If in review mode and answer was correct, remove from missed questions
     if (quizEngine.isReviewMode() && result.correct) {
+      console.log('Answer correct in review mode - attempting to remove from missed questions');
       const reviewQuestion = quizEngine.getCurrentReviewQuestion();
+      console.log('Current review question:', reviewQuestion);
       if (reviewQuestion) {
         await StorageManager.removeMissedQuestion(
           reviewQuestion.country,
           reviewQuestion.quizType
         );
+      } else {
+        console.log('No current review question found');
       }
     }
   } catch (error) {

@@ -247,14 +247,21 @@ class StorageManager {
    */
   static async removeMissedQuestion(countryName, quizType) {
     const missedQuestions = await this.getMissedQuestions();
+    console.log('Attempting to remove missed question:', { countryName, quizType });
+    console.log('Current missed questions:', missedQuestions.length);
+
     // Find and remove the first matching question
     const index = missedQuestions.findIndex(
       q => q.country === countryName && q.quizType === quizType
     );
 
     if (index !== -1) {
+      console.log('Found missed question at index:', index, missedQuestions[index]);
       missedQuestions.splice(index, 1);
       await this.set({ [STORAGE_KEYS.MISSED_QUESTIONS]: missedQuestions });
+      console.log('Successfully removed. Remaining:', missedQuestions.length);
+    } else {
+      console.log('Missed question not found in storage');
     }
   }
 

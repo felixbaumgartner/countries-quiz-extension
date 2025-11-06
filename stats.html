@@ -279,6 +279,10 @@
     // Load and display statistics
     async function loadStats() {
       try {
+        console.log('Loading stats...');
+        console.log('StorageManager available:', typeof StorageManager !== 'undefined');
+        console.log('STORAGE_KEYS available:', typeof STORAGE_KEYS !== 'undefined');
+
         const [score, streak, totalCorrect, totalQuestions, stats, missedQuestions] = await Promise.all([
           StorageManager.getScore(),
           StorageManager.getStreak(),
@@ -287,6 +291,8 @@
           StorageManager.getStats(),
           StorageManager.getMissedQuestions()
         ]);
+
+        console.log('Stats loaded:', { score, streak, totalCorrect, totalQuestions, stats, missedQuestions });
 
         // Overall stats
         // Calculate accuracy from actual totalCorrect/totalQuestions to ensure it's always accurate
@@ -307,8 +313,11 @@
 
         // Missed questions count
         document.getElementById('missed-count').textContent = missedQuestions.length;
+
+        console.log('Stats display completed successfully');
       } catch (error) {
         console.error('Error loading stats:', error);
+        alert('Error loading statistics: ' + error.message);
       }
     }
 
