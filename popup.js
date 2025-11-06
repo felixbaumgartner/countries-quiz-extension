@@ -150,9 +150,22 @@ function generateNewQuestion() {
     // Stop timer if running
     uiManager.stopTimer();
 
+    // Check if we're in review mode before generating
+    const wasInReviewMode = quizEngine.isReviewMode();
+    const remainingBefore = quizEngine.getRemainingReviewCount();
+
     // Generate question
     const question = quizEngine.generateQuestion();
     const quizType = quizEngine.getQuizType();
+
+    // Check if review mode just ended
+    if (wasInReviewMode && !quizEngine.isReviewMode() && remainingBefore === 0) {
+      // Show completion message
+      uiManager.showFeedback(true, 'Review complete! All missed questions have been answered.');
+      setTimeout(() => {
+        uiManager.hideFeedback();
+      }, 3000);
+    }
 
     // Render question based on type
     switch (quizType) {
@@ -310,6 +323,17 @@ async function handleAnswerResult(result, selectedAnswer) {
 
     currentScores = updatedScores;
     uiManager.updateScores(currentScores);
+
+    // If in review mode and answer was correct, remove from missed questions
+    if (quizEngine.isReviewMode() && result.correct) {
+      const reviewQuestion = quizEngine.getCurrentReviewQuestion();
+      if (reviewQuestion) {
+        await StorageManager.removeMissedQuestion(
+          reviewQuestion.country,
+          reviewQuestion.quizType
+        );
+      }
+    }
   } catch (error) {
     console.error('Error updating scores:', error);
   }

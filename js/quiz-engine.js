@@ -12,6 +12,7 @@ class QuizEngine {
     this.factsData = {};
     this.reviewMode = false;
     this.reviewQuestions = [];
+    this.currentReviewQuestion = null; // Track which missed question is being reviewed
   }
 
   /**
@@ -81,6 +82,11 @@ class QuizEngine {
       return this.generateReviewQuestion();
     }
 
+    // If review mode but no questions left, exit review mode
+    if (this.reviewMode && this.reviewQuestions.length === 0) {
+      this.stopReviewMode();
+    }
+
     const availableCountries = this.getFilteredCountries();
 
     if (availableCountries.length < QUIZ_CONFIG.NUM_OPTIONS) {
@@ -116,11 +122,13 @@ class QuizEngine {
    */
   generateReviewQuestion() {
     const missedQuestion = this.reviewQuestions.shift();
+    this.currentReviewQuestion = missedQuestion; // Store for later removal
     const correctCountry = this.countriesData.find(c => c.name === missedQuestion.country);
 
     if (!correctCountry) {
       // If country not found, generate regular question
       this.reviewMode = false;
+      this.currentReviewQuestion = null;
       return this.generateQuestion();
     }
 
@@ -229,6 +237,7 @@ class QuizEngine {
   stopReviewMode() {
     this.reviewMode = false;
     this.reviewQuestions = [];
+    this.currentReviewQuestion = null;
   }
 
   /**
@@ -245,6 +254,14 @@ class QuizEngine {
    */
   getRemainingReviewCount() {
     return this.reviewQuestions.length;
+  }
+
+  /**
+   * Get current review question being answered
+   * @returns {Object|null} Current review question or null if not in review mode
+   */
+  getCurrentReviewQuestion() {
+    return this.currentReviewQuestion;
   }
 
   /**

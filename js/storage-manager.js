@@ -240,6 +240,25 @@ class StorageManager {
   }
 
   /**
+   * Remove a specific missed question from storage
+   * @param {string} countryName - Name of the country to remove
+   * @param {string} quizType - Type of quiz to remove
+   * @returns {Promise<void>}
+   */
+  static async removeMissedQuestion(countryName, quizType) {
+    const missedQuestions = await this.getMissedQuestions();
+    // Find and remove the first matching question
+    const index = missedQuestions.findIndex(
+      q => q.country === countryName && q.quizType === quizType
+    );
+
+    if (index !== -1) {
+      missedQuestions.splice(index, 1);
+      await this.set({ [STORAGE_KEYS.MISSED_QUESTIONS]: missedQuestions });
+    }
+  }
+
+  /**
    * Reset all statistics
    * @returns {Promise<void>}
    */
