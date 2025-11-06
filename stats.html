@@ -276,12 +276,25 @@
   <script src="js/constants.js"></script>
   <script src="js/storage-manager.js"></script>
   <script>
+    // Immediate log to test if script is running
+    console.log('=== STATS PAGE SCRIPT LOADED ===');
+    console.log('Chrome storage available:', typeof chrome !== 'undefined' && typeof chrome.storage !== 'undefined');
+
+    // Visual indicator that script is running
+    document.addEventListener('DOMContentLoaded', () => {
+      document.title = 'Statistics [SCRIPT LOADED]';
+    });
+  </script>
+  <script>
     // Load and display statistics
     async function loadStats() {
       try {
         console.log('Loading stats...');
         console.log('StorageManager available:', typeof StorageManager !== 'undefined');
         console.log('STORAGE_KEYS available:', typeof STORAGE_KEYS !== 'undefined');
+
+        // Add loading indicator
+        document.querySelector('.stats-container').innerHTML += '<div style="background: yellow; padding: 10px; margin: 10px 0;">Loading stats...</div>';
 
         const [score, streak, totalCorrect, totalQuestions, stats, missedQuestions] = await Promise.all([
           StorageManager.getScore(),
@@ -315,8 +328,18 @@
         document.getElementById('missed-count').textContent = missedQuestions.length;
 
         console.log('Stats display completed successfully');
+
+        // Add success indicator
+        document.querySelector('.stats-container').innerHTML += '<div style="background: lightgreen; padding: 10px; margin: 10px 0;">✓ Stats loaded successfully!</div>';
       } catch (error) {
         console.error('Error loading stats:', error);
+
+        // Show error visually on page
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'background: red; color: white; padding: 20px; margin: 20px; border-radius: 8px;';
+        errorDiv.innerHTML = `<h3>Error Loading Stats</h3><p>${error.message}</p><pre>${error.stack}</pre>`;
+        document.body.insertBefore(errorDiv, document.body.firstChild);
+
         alert('Error loading statistics: ' + error.message);
       }
     }
