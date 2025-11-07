@@ -34,7 +34,6 @@ class UIManager {
 
       // Settings and navigation
       settingsButton: document.getElementById('settings-button'),
-      statsButton: document.getElementById('stats-button'),
       reviewButton: document.getElementById('review-button'),
 
       // Timer

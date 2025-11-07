@@ -111,11 +111,6 @@ function setupEventListeners() {
     uiManager.elements.settingsButton.addEventListener('click', openSettings);
   }
 
-  // Stats button
-  if (uiManager.elements.statsButton) {
-    uiManager.elements.statsButton.addEventListener('click', openStats);
-  }
-
   // Review button
   if (uiManager.elements.reviewButton) {
     uiManager.elements.reviewButton.addEventListener('click', startReviewMode);
@@ -353,13 +348,6 @@ async function handleAnswerResult(result, selectedAnswer) {
  */
 function openSettings() {
   window.open(chrome.runtime.getURL('settings.html'), '_blank');
-}
-
-/**
- * Open statistics page
- */
-function openStats() {
-  window.open(chrome.runtime.getURL('stats.html'), '_blank');
 }
 
 /**
