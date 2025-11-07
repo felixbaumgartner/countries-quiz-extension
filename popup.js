@@ -16,6 +16,11 @@ let currentScores = {
  */
 async function init() {
   try {
+    console.log('Initializing popup...');
+
+    // Initialize storage first
+    await StorageManager.initializeStorage();
+
     // Initialize UI Manager
     uiManager.init();
 
@@ -104,11 +109,6 @@ function setupEventListeners() {
   // Settings button
   if (uiManager.elements.settingsButton) {
     uiManager.elements.settingsButton.addEventListener('click', openSettings);
-  }
-
-  // Stats button
-  if (uiManager.elements.statsButton) {
-    uiManager.elements.statsButton.addEventListener('click', openStats);
   }
 
   // Review button
@@ -348,13 +348,6 @@ async function handleAnswerResult(result, selectedAnswer) {
  */
 function openSettings() {
   window.open(chrome.runtime.getURL('settings.html'), '_blank');
-}
-
-/**
- * Open statistics page
- */
-function openStats() {
-  window.open(chrome.runtime.getURL('stats.html'), '_blank');
 }
 
 /**

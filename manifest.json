@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Countries Quiz",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Test your knowledge of countries, capitals, and flags with advanced features",
   "action": {
     "default_popup": "popup.html",
