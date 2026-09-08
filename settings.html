@@ -31,6 +31,8 @@
       border-radius: 8px;
       padding: 8px 12px;
       cursor: pointer;
+      color: var(--text-color);
+      text-decoration: none;
       font-size: 1rem;
       transition: all 0.2s;
     }
@@ -111,12 +113,18 @@
     }
 
     .toggle-switch input {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      margin: 0;
       opacity: 0;
-      width: 0;
-      height: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
     }
 
     .slider {
+      pointer-events: none;
       position: absolute;
       cursor: pointer;
       top: 0;
@@ -171,8 +179,10 @@
     }
 
     .btn-primary:hover {
-      background-color: #2980b9;
+      filter: brightness(0.9);
     }
+
+    body.theme-dark .btn-primary { color: #142033; }
 
     .btn-danger {
       background-color: var(--danger-color);
@@ -206,14 +216,33 @@
         opacity: 1;
       }
     }
+    button:focus-visible, a:focus-visible, input:focus-visible + .slider {
+      outline: 3px solid var(--primary-color);
+      outline-offset: 3px;
+    }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .page-status { margin: 0 0 16px; }
+    .page-status.error { color: var(--danger-color); font-weight: 600; }
+    .setting-description { color: var(--muted-color); opacity: 1; }
+    .button-group { flex-wrap: wrap; }
+    @media (max-width: 400px) {
+      body { padding: 12px; }
+      .settings-header { flex-wrap: wrap; }
+      .setting-control { flex-wrap: wrap; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before { animation: none !important; transition: none !important; }
+    }
   </style>
 </head>
 <body>
-  <div class="settings-container">
+  <main class="settings-container">
     <div class="settings-header">
-      <button class="back-button" onclick="window.close()">← Back</button>
+      <a class="back-button" href="popup.html">← Back to quiz</a>
       <h1>Settings</h1>
     </div>
+
+    <p id="page-status" class="page-status" role="status" aria-live="polite"></p>
 
     <div class="settings-section">
       <h2>Quiz Settings</h2>
@@ -248,14 +277,14 @@
       </div>
 
       <div class="setting-item">
-        <label class="setting-label">Timed Mode</label>
+        <label class="setting-label" for="timed-mode">Timed Mode</label>
         <div class="setting-description">Enable a countdown timer for each question</div>
         <div class="setting-control">
           <label class="toggle-switch">
             <input type="checkbox" id="timed-mode">
             <span class="slider"></span>
           </label>
-          <input type="number" id="timer-duration" min="5" max="60" value="10" style="max-width: 100px;">
+          <input type="number" id="timer-duration" aria-label="Time per question in seconds" min="5" max="60" step="1" required value="10" style="max-width: 100px;">
           <span>seconds</span>
         </div>
       </div>
@@ -280,7 +309,7 @@
       <h2>Audio</h2>
 
       <div class="setting-item">
-        <label class="setting-label">Sound Effects</label>
+        <label class="setting-label" for="sound-enabled">Sound Effects</label>
         <div class="setting-description">Play sounds for correct/incorrect answers</div>
         <div class="setting-control">
           <label class="toggle-switch">
@@ -299,125 +328,10 @@
         <button class="btn btn-danger" id="reset-stats">Reset Statistics</button>
       </div>
     </div>
-  </div>
+  </main>
 
-  <script src="data/countries.js"></script>
-  <script src="data/regions.js"></script>
-  <script src="data/facts.js"></script>
   <script src="js/constants.js"></script>
   <script src="js/storage-manager.js"></script>
-  <script>
-    // Load current settings
-    async function loadSettings() {
-      try {
-        const settings = await StorageManager.getSettings();
-
-        document.getElementById('difficulty').value = settings.difficulty || 'medium';
-        document.getElementById('region').value = settings.region || 'all';
-        document.getElementById('theme').value = settings.theme || 'light';
-        document.getElementById('timed-mode').checked = settings.timedMode || false;
-        document.getElementById('timer-duration').value = settings.timerDuration || 10;
-        document.getElementById('timer-duration').disabled = !settings.timedMode;
-        document.getElementById('sound-enabled').checked = settings.soundEnabled !== false;
-
-        // Apply theme
-        applyTheme(settings.theme || 'light');
-      } catch (error) {
-        console.error('Error loading settings:', error);
-      }
-    }
-
-    // Save settings
-    async function saveSettings() {
-      try {
-        const settings = {
-          difficulty: document.getElementById('difficulty').value,
-          region: document.getElementById('region').value,
-          theme: document.getElementById('theme').value,
-          timedMode: document.getElementById('timed-mode').checked,
-          timerDuration: parseInt(document.getElementById('timer-duration').value),
-          soundEnabled: document.getElementById('sound-enabled').checked
-        };
-
-        await StorageManager.updateSettings(settings);
-        applyTheme(settings.theme);
-        showNotification('Settings saved successfully!');
-      } catch (error) {
-        console.error('Error saving settings:', error);
-        showNotification('Error saving settings', true);
-      }
-    }
-
-    // Apply theme
-    function applyTheme(theme) {
-      document.body.classList.remove('theme-light', 'theme-dark');
-      document.body.classList.add(`theme-${theme}`);
-    }
-
-    // Show notification
-    function showNotification(message, isError = false) {
-      const notification = document.createElement('div');
-      notification.className = 'save-notification';
-      notification.textContent = message;
-      if (isError) {
-        notification.style.backgroundColor = 'var(--danger-color)';
-      }
-      document.body.appendChild(notification);
-
-      setTimeout(() => {
-        notification.style.animation = 'slideInRight 0.3s ease-out reverse';
-        setTimeout(() => notification.remove(), 300);
-      }, 2000);
-    }
-
-    // Export data
-    async function exportData() {
-      try {
-        const data = await StorageManager.exportData();
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `countries-quiz-data-${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        showNotification('Data exported successfully!');
-      } catch (error) {
-        console.error('Error exporting data:', error);
-        showNotification('Error exporting data', true);
-      }
-    }
-
-    // Reset statistics
-    async function resetStats() {
-      if (!confirm('Are you sure you want to reset all statistics? This action cannot be undone.')) {
-        return;
-      }
-
-      try {
-        await StorageManager.resetStats();
-        showNotification('Statistics reset successfully!');
-      } catch (error) {
-        console.error('Error resetting stats:', error);
-        showNotification('Error resetting statistics', true);
-      }
-    }
-
-    // Event listeners
-    document.getElementById('difficulty').addEventListener('change', saveSettings);
-    document.getElementById('region').addEventListener('change', saveSettings);
-    document.getElementById('theme').addEventListener('change', saveSettings);
-    document.getElementById('timed-mode').addEventListener('change', (e) => {
-      document.getElementById('timer-duration').disabled = !e.target.checked;
-      saveSettings();
-    });
-    document.getElementById('timer-duration').addEventListener('change', saveSettings);
-    document.getElementById('sound-enabled').addEventListener('change', saveSettings);
-    document.getElementById('export-data').addEventListener('click', exportData);
-    document.getElementById('reset-stats').addEventListener('click', resetStats);
-
-    // Initialize
-    loadSettings();
-  </script>
+  <script src="js/settings.js"></script>
 </body>
 </html>

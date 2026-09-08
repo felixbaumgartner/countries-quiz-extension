@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Countries Quiz",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Test your knowledge of countries, capitals, and flags with advanced features",
   "action": {
     "default_popup": "popup.html",
@@ -23,4 +23,4 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; img-src 'self' https://flagcdn.com"
   }
-} 
+}

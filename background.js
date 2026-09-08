@@ -1,70 +1,25 @@
-// Background script
-// This will handle initialization and storage setup
+// Use the same defaults and write lock as the popup; updates preserve progress.
+importScripts('js/constants.js', 'js/storage-manager.js');
 
 chrome.runtime.onInstalled.addListener(() => {
-  // Only initialize storage if it doesn't exist (don't reset on updates)
-  chrome.storage.local.get([
-    'countriesQuizScore',
-    'countriesQuizStreak',
-    'countriesQuizTotalCorrect',
-    'countriesQuizTotalQuestions',
-    'countriesQuizSettings',
-    'countriesQuizStats',
-    'countriesQuizMissedQuestions'
-  ], (result) => {
-    const updates = {};
-
-    // Initialize score tracking if not exists
-    if (result.countriesQuizScore === undefined) {
-      updates.countriesQuizScore = 0;
-    }
-    if (result.countriesQuizStreak === undefined) {
-      updates.countriesQuizStreak = 0;
-    }
-    if (result.countriesQuizTotalCorrect === undefined) {
-      updates.countriesQuizTotalCorrect = 0;
-    }
-    if (result.countriesQuizTotalQuestions === undefined) {
-      updates.countriesQuizTotalQuestions = 0;
-    }
-
-    // Initialize settings if not exists
-    if (!result.countriesQuizSettings) {
-      updates.countriesQuizSettings = {
-        difficulty: 'medium',
-        theme: 'light',
-        soundEnabled: true,
-        timedMode: false,
-        timerDuration: 10,
-        region: 'all'
-      };
-    }
-
-    // Initialize statistics if not exists
-    if (!result.countriesQuizStats) {
-      updates.countriesQuizStats = {
-        byQuizType: {
-          capitals: { correct: 0, total: 0 },
-          flags: { correct: 0, total: 0 },
-          countries: { correct: 0, total: 0 }
-        },
-        byCountry: {},
-        quizHistory: [],
-        startDate: new Date().toISOString()
-      };
-    }
-
-    // Initialize missed questions if not exists
-    if (!result.countriesQuizMissedQuestions) {
-      updates.countriesQuizMissedQuestions = [];
-    }
-
-    // Only update if there are changes
-    if (Object.keys(updates).length > 0) {
-      chrome.storage.local.set(updates);
-      console.log('Countries Quiz extension initialized with defaults');
-    } else {
-      console.log('Countries Quiz extension updated, preserving existing data');
-    }
+  StorageManager.initializeStorage().catch(error => {
+    console.error('Could not initialize Countries Quiz storage:', error);
   });
-}); 
+});
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (sender.id !== chrome.runtime.id || message?.type !== 'record-answer') return false;
+  if (typeof message.correct !== 'boolean' || !Object.values(QUIZ_TYPES).includes(message.quizType) ||
+      !message.country || typeof message.country.name !== 'string') {
+    sendResponse({ ok: false, error: 'Invalid answer data' });
+    return false;
+  }
+  StorageManager.updateScore(
+    message.correct, message.quizType, message.country, message.userAnswer,
+    message.correctAnswer, message.isReview === true
+  ).then(scores => sendResponse({ ok: true, scores }), error => {
+    console.error('Could not save answer:', error);
+    sendResponse({ ok: false, error: 'Could not save answer' });
+  });
+  return true;
+});

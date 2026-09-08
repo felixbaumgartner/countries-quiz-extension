@@ -1,0 +1,13 @@
+{
+  "name": "countries-quiz-extension",
+  "version": "2.1.1",
+  "private": true,
+  "description": "Countries Quiz extension quality checks",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "check": "node scripts/check.cjs",
+    "test:browser": "node scripts/browser-smoke.cjs"
+  },
+  "engines": { "node": ">=22" },
+  "devDependencies": { "playwright": "1.62.1" }
+}

@@ -2,6 +2,8 @@
 
 A comprehensive and educational Chrome extension that tests your knowledge of countries, capitals, and flags from around the world with advanced features and detailed statistics.
 
+Version 2.1.1 improves extension compatibility, scoring reliability, review behavior, keyboard controls, and popup layout. See [quality checks and remaining release work](docs/QUALITY.md) for the verified scope and limitations.
+
 ## ✨ Features
 
 ### Quiz Modes
@@ -112,14 +114,14 @@ countries-quiz-extension/
 - **APIs**: Chrome Extension API (Manifest V3), Web Audio API
 - **Storage**: Chrome Storage API (local)
 - **Data**: Flag images from [flagcdn.com](https://flagcdn.com)
-- **Code Quality**: ESLint, Prettier
+- **Code Quality**: Automated syntax/CSP checks, Node regression tests, and Playwright extension smoke tests
 - **Architecture**: Modular JavaScript with separation of concerns
 
 ## 🎨 Technical Highlights
 
 - **Modular Architecture**: Clean separation of concerns (Storage, UI, Quiz Engine, Sound)
 - **Error Handling**: Comprehensive try-catch blocks and error recovery
-- **Accessibility**: WCAG compliant with ARIA labels and keyboard navigation
+- **Accessibility**: Native keyboard controls, focus indicators, live feedback, and reduced-motion support; a full WCAG audit is still pending
 - **Performance**: Efficient data structures and lazy loading
 - **Security**: Content Security Policy for external resources
 - **Progressive Enhancement**: Works without sound, with reduced motion, etc.
@@ -135,7 +137,16 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for deta
 
 ## 📝 Changelog
 
-### Version 2.0.0 (Current)
+### Version 2.1.1 (Current)
+- Fixed settings and statistics scripts blocked by Manifest V3 CSP.
+- Made answer submission single-use and moved persistence to the background worker.
+- Serialized storage updates across extension pages to prevent lost scores.
+- Fixed review duplicates, empty-review startup, stale mode attribution, and timer validation.
+- Added a compact, keyboard-accessible popup with visible navigation controls.
+- Repaired four country-to-region metadata joins and supported small nonempty filters.
+- Added reproducible automated checks and GitHub Actions CI.
+
+### Version 2.0.0
 - ✨ Added difficulty levels and region filters
 - ✨ Implemented comprehensive statistics tracking
 - ✨ Added dark mode support
@@ -174,4 +185,4 @@ If you find this extension helpful, please consider:
 
 ---
 
-**Made with ❤️ for geography enthusiasts worldwide** 
+**Made with ❤️ for geography enthusiasts worldwide**

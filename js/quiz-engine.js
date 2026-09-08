@@ -78,6 +78,7 @@ class QuizEngine {
    * @returns {Object} Question object
    */
   generateQuestion() {
+    this.currentQuestion = null;
     if (this.reviewMode && this.reviewQuestions.length > 0) {
       return this.generateReviewQuestion();
     }
@@ -89,23 +90,12 @@ class QuizEngine {
 
     const availableCountries = this.getFilteredCountries();
 
-    if (availableCountries.length < QUIZ_CONFIG.NUM_OPTIONS) {
-      throw new Error('Not enough countries available for the selected filters');
+    if (availableCountries.length === 0) {
+      throw new Error('No countries match these filters. Open Settings to choose another region or difficulty.');
     }
 
     const correctCountry = this.getRandomCountry(availableCountries);
-    const options = [correctCountry];
-
-    // Add wrong options
-    while (options.length < QUIZ_CONFIG.NUM_OPTIONS) {
-      const randomCountry = this.getRandomCountry(availableCountries);
-      if (!options.some(country => country.name === randomCountry.name)) {
-        options.push(randomCountry);
-      }
-    }
-
-    // Shuffle options
-    this.shuffleArray(options);
+    const options = this.createOptions(correctCountry, availableCountries);
 
     this.currentQuestion = {
       correctCountry,
@@ -136,16 +126,7 @@ class QuizEngine {
       return this.generateQuestion();
     }
 
-    const options = [correctCountry];
-    const availableCountries = this.countriesData.filter(c => c.name !== correctCountry.name);
-
-    while (options.length < QUIZ_CONFIG.NUM_OPTIONS && availableCountries.length > 0) {
-      const randomIndex = Math.floor(Math.random() * availableCountries.length);
-      const randomCountry = availableCountries.splice(randomIndex, 1)[0];
-      options.push(randomCountry);
-    }
-
-    this.shuffleArray(options);
+    const options = this.createOptions(correctCountry, this.countriesData);
 
     this.currentQuestion = {
       correctCountry,
@@ -154,6 +135,32 @@ class QuizEngine {
     };
 
     return this.currentQuestion;
+  }
+
+  // A finite candidate pool avoids retry loops and duplicate visible answers.
+  // Small filters still select the target; distractors can come from other regions.
+  createOptions(correctCountry, preferredCountries) {
+    const valueFor = country => this.normalizeString(
+      this.quizType === QUIZ_TYPES.CAPITALS ? country.capital : country.name
+    );
+    const seen = new Set([valueFor(correctCountry)]);
+    const options = [correctCountry];
+    const candidates = [
+      ...this.shuffleArray([...preferredCountries]),
+      ...this.shuffleArray([...this.countriesData])
+    ];
+    for (const country of candidates) {
+      if (options.length === QUIZ_CONFIG.NUM_OPTIONS) break;
+      const value = valueFor(country);
+      if (!seen.has(value)) {
+        seen.add(value);
+        options.push(country);
+      }
+    }
+    if (options.length < QUIZ_CONFIG.NUM_OPTIONS) {
+      throw new Error('Not enough distinct answers in the quiz data.');
+    }
+    return this.shuffleArray(options);
   }
 
   /**
@@ -165,11 +172,13 @@ class QuizEngine {
     if (!this.currentQuestion) {
       throw new Error('No current question');
     }
+    if (this.currentQuestion.answered) return null;
+    this.currentQuestion.answered = true;
 
     const correctCountry = this.currentQuestion.correctCountry;
     let correctAnswer;
 
-    switch (this.quizType) {
+    switch (this.currentQuestion.quizType) {
       case QUIZ_TYPES.CAPITALS:
         correctAnswer = correctCountry.capital;
         break;
@@ -187,7 +196,9 @@ class QuizEngine {
       correct,
       correctAnswer,
       country: correctCountry,
-      funFact: correctCountry.fact
+      funFact: correctCountry.fact,
+      quizType: this.currentQuestion.quizType,
+      reviewQuestion: this.reviewMode ? this.currentReviewQuestion : null
     };
   }
 
@@ -231,8 +242,17 @@ class QuizEngine {
    * @param {Array} missedQuestions - Array of missed questions
    */
   startReviewMode(missedQuestions) {
+    const seen = new Set();
     this.reviewMode = true;
-    this.reviewQuestions = [...missedQuestions];
+    this.currentReviewQuestion = null;
+    this.reviewQuestions = missedQuestions.filter(question => {
+      if (!question || typeof question !== 'object') return false;
+      const key = JSON.stringify([question.country, question.quizType]);
+      if (seen.has(key) || !Object.values(QUIZ_TYPES).includes(question.quizType) ||
+          !this.countriesData.some(country => country.name === question.country)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   /**

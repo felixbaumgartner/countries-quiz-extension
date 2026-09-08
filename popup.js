@@ -10,11 +10,13 @@ let currentScores = {
   totalCorrect: 0,
   totalQuestions: 0
 };
+let savingAnswer = false;
 
 /**
  * Initialize the application
  */
 async function init() {
+  uiManager.init();
   try {
     console.log('Initializing popup...');
 
@@ -110,6 +112,9 @@ function setupEventListeners() {
   if (uiManager.elements.settingsButton) {
     uiManager.elements.settingsButton.addEventListener('click', openSettings);
   }
+  uiManager.elements.statsButton?.addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('stats.html') });
+  });
 
   // Review button
   if (uiManager.elements.reviewButton) {
@@ -119,7 +124,6 @@ function setupEventListeners() {
   // Option buttons - use event delegation
   if (uiManager.elements.optionsContainer) {
     uiManager.elements.optionsContainer.addEventListener('click', handleOptionClick);
-    uiManager.elements.optionsContainer.addEventListener('keydown', handleOptionKeydown);
   }
 
   // Global keyboard shortcut for Next Question (Enter or Space when feedback is shown)
@@ -131,6 +135,8 @@ function setupEventListeners() {
  * @param {string} type - Quiz type
  */
 function setQuizType(type) {
+  if (savingAnswer) return;
+  quizEngine.stopReviewMode();
   quizEngine.setQuizType(type);
   uiManager.updateActiveQuizType(type);
   generateNewQuestion();
@@ -140,6 +146,7 @@ function setQuizType(type) {
  * Generate a new question
  */
 function generateNewQuestion() {
+  if (savingAnswer) return;
   try {
     // Hide feedback
     uiManager.hideFeedback();
@@ -158,14 +165,7 @@ function generateNewQuestion() {
     const question = quizEngine.generateQuestion();
     const quizType = quizEngine.getQuizType();
 
-    // Check if review mode just ended
-    if (wasInReviewMode && !quizEngine.isReviewMode() && remainingBefore === 0) {
-      // Show completion message
-      uiManager.showFeedback(true, 'Review complete! All missed questions have been answered.');
-      setTimeout(() => {
-        uiManager.hideFeedback();
-      }, 3000);
-    }
+    uiManager.updateActiveQuizType(quizType);
 
     // Render question based on type
     switch (quizType) {
@@ -192,8 +192,7 @@ function generateNewQuestion() {
         },
         () => {
           // Time's up - treat as incorrect
-          const result = quizEngine.checkAnswer('');
-          handleAnswerResult(result, '');
+          checkAnswer('');
         }
       );
     }
@@ -201,10 +200,17 @@ function generateNewQuestion() {
     // Update review mode display
     if (quizEngine.isReviewMode()) {
       const remaining = quizEngine.getRemainingReviewCount();
-      uiManager.elements.quizContent.innerHTML += ` <span class="review-badge">Review Mode (${remaining} left)</span>`;
+      const badge = document.createElement('span');
+      badge.className = 'review-badge';
+      badge.textContent = `Review · ${remaining + 1} remaining`;
+      uiManager.elements.quizContent.appendChild(badge);
+    } else if (wasInReviewMode && remainingBefore === 0) {
+      uiManager.showNotice('Review session finished. Any skipped or incorrect answers remain available for review.');
     }
   } catch (error) {
     console.error('Error generating question:', error);
+    uiManager.elements.optionsContainer.replaceChildren();
+    uiManager.elements.flagContainer.classList.add(UI_CLASSES.HIDDEN);
     uiManager.showError(error.message || 'Failed to generate question');
   }
 }
@@ -215,7 +221,7 @@ function generateNewQuestion() {
  */
 function handleOptionClick(event) {
   const button = event.target.closest('.option-button');
-  if (!button) return;
+  if (!button || button.disabled || savingAnswer) return;
 
   const answer = button.dataset.value;
   if (answer) {
@@ -224,30 +230,16 @@ function handleOptionClick(event) {
 }
 
 /**
- * Handle keyboard navigation for options
- * @param {Event} event - Keydown event
- */
-function handleOptionKeydown(event) {
-  const button = event.target.closest('.option-button');
-  if (!button) return;
-
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    const answer = button.dataset.value;
-    if (answer) {
-      checkAnswer(answer);
-    }
-  }
-}
-
-/**
  * Handle global keyboard shortcuts
  * @param {Event} event - Keydown event
  */
 function handleGlobalKeydown(event) {
+  if (event.defaultPrevented || event.repeat || savingAnswer) return;
+  // Native controls own their keys. A submitted answer must not also advance.
+  if (event.target.closest('button, a, input, textarea, select, [contenteditable]')) return;
   // Only trigger when feedback is visible (after answering)
   const feedback = document.getElementById('feedback');
-  if (!feedback || feedback.classList.contains('hidden')) return;
+  if (!feedback || feedback.classList.contains('hidden') || !quizEngine.currentQuestion?.answered) return;
 
   // Prevent if user is typing in an input or textarea
   if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return;
@@ -264,12 +256,14 @@ function handleGlobalKeydown(event) {
  * @param {string} selectedAnswer - User's answer
  */
 async function checkAnswer(selectedAnswer) {
+  if (savingAnswer) return;
   try {
     // Stop timer
     uiManager.stopTimer();
 
     // Check answer
     const result = quizEngine.checkAnswer(selectedAnswer);
+    if (!result) return;
 
     // Handle result
     await handleAnswerResult(result, selectedAnswer);
@@ -285,61 +279,46 @@ async function checkAnswer(selectedAnswer) {
  * @param {string} selectedAnswer - User's selected answer
  */
 async function handleAnswerResult(result, selectedAnswer) {
-  // Play sound
-  const settings = quizEngine.getSettings();
-  if (settings.soundEnabled) {
-    if (result.correct) {
-      soundManager.playCorrect();
-    } else {
-      soundManager.playIncorrect();
-    }
-  }
-
-  // Highlight answers
-  uiManager.highlightAnswers(selectedAnswer, result.correctAnswer);
-
-  // Show feedback
-  uiManager.showFeedback(result.correct, result.correctAnswer, result.funFact);
-
-  // Scroll to Next button for better UX
-  setTimeout(() => {
-    if (uiManager.elements.nextButton) {
-      uiManager.elements.nextButton.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest'
-      });
-    }
-  }, 300); // Small delay to allow feedback to render
-
-  // Update scores
+  if (!result) return;
+  const focusedAnswer = uiManager.elements.optionsContainer.contains(document.activeElement);
+  savingAnswer = true;
+  const controls = ['nextButton', 'quizCapitals', 'quizFlags', 'quizCountries', 'reviewButton', 'settingsButton', 'statsButton'];
+  controls.forEach(key => { if (uiManager.elements[key]) uiManager.elements[key].disabled = true; });
   try {
-    const updatedScores = await StorageManager.updateScore(
+    // Audio is optional; feedback and persistence must still work if it fails.
+    const settings = quizEngine.getSettings();
+    if (settings.soundEnabled) {
+      try {
+        if (result.correct) soundManager.playCorrect();
+        else soundManager.playIncorrect();
+      } catch (error) {
+        console.warn('Sound unavailable:', error);
+      }
+    }
+    uiManager.highlightAnswers(selectedAnswer, result.correctAnswer);
+    uiManager.showFeedback(result.correct, result.correctAnswer, result.funFact);
+    const updatedScores = await StorageManager.submitAnswer(
       result.correct,
-      quizEngine.getQuizType(),
+      result.quizType,
       result.country,
       selectedAnswer,
-      result.correctAnswer
+      result.correctAnswer,
+      Boolean(result.reviewQuestion)
     );
 
     currentScores = updatedScores;
     uiManager.updateScores(currentScores);
 
-    // If in review mode and answer was correct, remove from missed questions
-    if (quizEngine.isReviewMode() && result.correct) {
-      console.log('Answer correct in review mode - attempting to remove from missed questions');
-      const reviewQuestion = quizEngine.getCurrentReviewQuestion();
-      console.log('Current review question:', reviewQuestion);
-      if (reviewQuestion) {
-        await StorageManager.removeMissedQuestion(
-          reviewQuestion.country,
-          reviewQuestion.quizType
-        );
-      } else {
-        console.log('No current review question found');
-      }
-    }
   } catch (error) {
     console.error('Error updating scores:', error);
+    uiManager.showError('Your answer could not be saved. Check extension storage and try another question.');
+  } finally {
+    savingAnswer = false;
+    controls.forEach(key => { if (uiManager.elements[key]) uiManager.elements[key].disabled = false; });
+    if (focusedAnswer && (document.activeElement === document.body ||
+        uiManager.elements.optionsContainer.contains(document.activeElement))) {
+      uiManager.elements.nextButton.focus({ preventScroll: true });
+    }
   }
 }
 
@@ -347,22 +326,20 @@ async function handleAnswerResult(result, selectedAnswer) {
  * Open settings page
  */
 function openSettings() {
-  window.open(chrome.runtime.getURL('settings.html'), '_blank');
+  chrome.tabs.create({ url: chrome.runtime.getURL('settings.html') });
 }
 
 /**
  * Start review mode
  */
 async function startReviewMode() {
+  if (savingAnswer) return;
   try {
     const missedQuestions = await StorageManager.getMissedQuestions();
 
     if (missedQuestions.length === 0) {
-      uiManager.showFeedback(true, 'No missed questions to review!');
-      setTimeout(() => {
-        uiManager.hideFeedback();
-        generateNewQuestion();
-      }, 2000);
+      if (!quizEngine.currentQuestion) generateNewQuestion();
+      uiManager.showNotice('No missed questions to review yet. Keep exploring!');
       return;
     }
 

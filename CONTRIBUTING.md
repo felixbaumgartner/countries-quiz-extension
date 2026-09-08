@@ -97,6 +97,20 @@ Ensure all data follows the existing format:
 
 ## Testing
 
+Use Node.js 22 or newer. Install development dependencies and run:
+
+```sh
+npm ci --ignore-scripts
+npm run check
+npm test
+npx playwright install chromium
+npm run test:browser
+```
+
+The browser test loads the actual unpacked extension in an isolated Chromium profile, with real storage and Manifest V3 CSP. It writes screenshots and temporary profiles to ignored `output/playwright/`. These development dependencies are not needed to install or use the extension. CI runs the same checks on Linux.
+
+Also load the extension manually in Chrome and check its toolbar popup, screen-reader behavior, and network failure states before a store release. See [QUALITY.md](docs/QUALITY.md).
+
 Before submitting a PR, please test:
 
 1. All three quiz types (Capitals, Flags, Countries)

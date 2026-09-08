@@ -7,10 +7,16 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
+  <main class="container">
     <header>
-      <h1>Countries Quiz</h1>
+      <div>
+        <div class="eyebrow">A little geography, every day</div>
+        <h1>Countries Quiz</h1>
+      </div>
       <div class="header-actions">
+        <button id="stats-button" class="icon-button" aria-label="Statistics" title="Statistics">
+          <span aria-hidden="true">📊</span>
+        </button>
         <button id="settings-button" class="icon-button" aria-label="Settings" title="Settings">
           ⚙️
         </button>
@@ -24,7 +30,7 @@
       <div class="score-container">
         <div class="score-item">
           <div class="score-label">Accuracy</div>
-          <div class="score-value" id="score">0</div>%
+          <div class="score-value"><span id="score">0</span><span class="score-unit">%</span></div>
         </div>
         <div class="score-divider"></div>
         <div class="score-item">
@@ -52,16 +58,16 @@
 
     <div class="quiz-container">
       <!-- Loading spinner -->
-      <div id="loading-spinner" class="loading-spinner hidden">
+      <div id="loading-spinner" class="loading-spinner hidden" role="status" aria-label="Loading question">
         <div class="spinner"></div>
       </div>
 
-      <div id="quiz-content" role="region" aria-live="polite" aria-label="Quiz question">
+      <div id="quiz-content" role="region" tabindex="-1" aria-live="polite" aria-label="Quiz question">
         <!-- Quiz content will be inserted here -->
       </div>
 
       <div id="flag-container" class="flag-container hidden">
-        <img id="flag-image" src="" alt="Country flag" />
+        <img id="flag-image" alt="Flag to identify" />
       </div>
 
       <div id="options-container" class="options-grid" role="group" aria-label="Answer options">
@@ -74,7 +80,7 @@
     </div>
 
     <div class="controls">
-      <div class="quiz-type">
+      <div class="quiz-type" role="group" aria-label="Quiz mode">
         <button id="quiz-capitals" class="quiz-button active" aria-pressed="true">
           🏛️ Capitals
         </button>
@@ -85,11 +91,11 @@
           🌍 Countries
         </button>
       </div>
-      <button id="next-button" class="action-button" title="Press Enter or Space to continue">
+      <button id="next-button" class="action-button">
         Next Question →
       </button>
     </div>
-  </div>
+  </main>
 
   <!-- Load scripts in order -->
   <script src="data/countries.js"></script>

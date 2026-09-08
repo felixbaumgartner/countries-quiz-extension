@@ -31,6 +31,8 @@
       border-radius: 8px;
       padding: 8px 12px;
       cursor: pointer;
+      color: var(--text-color);
+      text-decoration: none;
       font-size: 1rem;
       transition: all 0.2s;
     }
@@ -57,7 +59,7 @@
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
       margin-bottom: 20px;
     }
@@ -211,17 +213,36 @@
     }
 
     .btn:hover {
-      background-color: #2980b9;
+      filter: brightness(0.9);
+    }
+    body.theme-dark #review-button { color: #142033; }
+    button:focus-visible, a:focus-visible, input:focus-visible + .slider {
+      outline: 3px solid var(--primary-color);
+      outline-offset: 3px;
+    }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .page-status { margin: 0 0 16px; }
+    .page-status.error { color: var(--danger-color); font-weight: 600; }
+    .history-type, .stat-label, .no-data { color: var(--muted-color); opacity: 1; }
+    .quiz-type-details { color: var(--muted-color); }
+    .btn { margin-bottom: 8px; }
+    @media (max-width: 400px) {
+      body { padding: 12px; }
+      .stats-header, .country-stat-item { flex-wrap: wrap; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before { animation: none !important; transition: none !important; }
     }
   </style>
 </head>
 <body>
-  <div class="stats-container">
+  <main class="stats-container">
     <div class="stats-header">
-      <button class="back-button" onclick="window.close()">← Back</button>
+      <a class="back-button" href="popup.html">← Back to quiz</a>
       <h1>Statistics</h1>
-      <span style="background: #4CAF50; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; margin-left: 10px;">v2.1.0</span>
     </div>
+
+    <p id="page-status" class="page-status" role="status" aria-live="polite"></p>
 
     <div class="stats-section">
       <h2>Overall Performance</h2>
@@ -269,277 +290,20 @@
     <div class="stats-section">
       <h2>Missed Questions Review</h2>
       <p>You have <strong id="missed-count">0</strong> missed questions to review.</p>
-      <button class="btn" id="review-button">Start Review Mode</button>
-      <button class="btn" id="clear-missed" style="background-color: var(--danger-color); margin-left: 8px;">Clear Missed Questions</button>
+      <button class="btn" id="review-button" disabled>Start Review Mode</button>
+      <button class="btn" id="clear-missed" disabled style="background-color: var(--danger-color); margin-left: 8px;">Clear Missed Questions</button>
     </div>
 
     <div class="stats-section" style="border: 2px solid #ff9800;">
-      <h2>🔧 Debug & Reset</h2>
-      <p style="opacity: 0.7;">Use these tools to troubleshoot or reset your data.</p>
+      <h2>Manage Statistics</h2>
+      <p>Reset your quiz progress and missed questions. Your settings will be kept.</p>
       <button class="btn" id="reset-all" style="background-color: #ff5722;">Reset All Statistics</button>
       <button class="btn" id="reload-page" style="background-color: #2196F3; margin-left: 8px;">Reload Page</button>
     </div>
-  </div>
+  </main>
 
   <script src="js/constants.js"></script>
   <script src="js/storage-manager.js"></script>
-  <script>
-    // Immediate log to test if script is running
-    console.log('=== STATS PAGE SCRIPT LOADED ===');
-    console.log('Chrome storage available:', typeof chrome !== 'undefined' && typeof chrome.storage !== 'undefined');
-    console.log('StorageManager available:', typeof StorageManager !== 'undefined');
-    console.log('STORAGE_KEYS available:', typeof STORAGE_KEYS !== 'undefined');
-
-    // Visual indicator that script is running
-    document.addEventListener('DOMContentLoaded', () => {
-      document.title = 'Statistics [SCRIPT LOADED]';
-      console.log('DOM Content Loaded - initializing stats');
-      initializeAndLoadStats();
-    });
-
-    // Initialize storage and load stats
-    async function initializeAndLoadStats() {
-      try {
-        console.log('Step 1: Initialize storage');
-        await StorageManager.initializeStorage();
-
-        console.log('Step 2: Load stats');
-        await loadStats();
-      } catch (error) {
-        console.error('Failed to initialize:', error);
-        showError('Initialization failed: ' + error.message, error);
-      }
-    }
-
-    // Show error on page
-    function showError(message, error) {
-      const errorDiv = document.createElement('div');
-      errorDiv.style.cssText = 'background: #ff4444; color: white; padding: 20px; margin: 20px; border-radius: 8px; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;';
-      errorDiv.innerHTML = `
-        <h3>❌ Error</h3>
-        <p><strong>${message}</strong></p>
-        <pre style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px; overflow: auto;">${error ? error.stack : 'No stack trace'}</pre>
-      `;
-      document.body.appendChild(errorDiv);
-    }
-
-    // Load and display statistics
-    async function loadStats() {
-      try {
-        console.log('Loading stats...');
-
-        const [score, streak, totalCorrect, totalQuestions, stats, missedQuestions] = await Promise.all([
-          StorageManager.getScore(),
-          StorageManager.getStreak(),
-          StorageManager.getTotalCorrect(),
-          StorageManager.getTotalQuestions(),
-          StorageManager.getStats(),
-          StorageManager.getMissedQuestions()
-        ]);
-
-        console.log('Stats loaded:', { score, streak, totalCorrect, totalQuestions, stats, missedQuestions });
-
-        // Overall stats
-        // Calculate accuracy from actual totalCorrect/totalQuestions to ensure it's always accurate
-        const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
-        document.getElementById('overall-accuracy').textContent = accuracy + '%';
-        document.getElementById('current-streak').textContent = streak;
-        document.getElementById('total-correct').textContent = totalCorrect;
-        document.getElementById('total-questions').textContent = totalQuestions;
-
-        // Quiz type stats
-        displayQuizTypeStats(stats.byQuizType);
-
-        // Recent history
-        displayHistory(stats.quizHistory);
-
-        // Country stats
-        displayCountryStats(stats.byCountry);
-
-        // Missed questions count
-        document.getElementById('missed-count').textContent = missedQuestions.length;
-
-        console.log('✓ Stats display completed successfully');
-      } catch (error) {
-        console.error('Error loading stats:', error);
-        showError('Failed to load statistics', error);
-      }
-    }
-
-    // Display quiz type statistics
-    function displayQuizTypeStats(byQuizType) {
-      const container = document.getElementById('quiz-type-stats');
-      container.innerHTML = '';
-
-      const types = [
-        { key: 'capitals', emoji: '🏛️', name: 'Capitals' },
-        { key: 'flags', emoji: '🚩', name: 'Flags' },
-        { key: 'countries', emoji: '🌍', name: 'Countries' }
-      ];
-
-      types.forEach(type => {
-        const data = byQuizType[type.key];
-        const accuracy = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
-
-        const item = document.createElement('div');
-        item.className = 'quiz-type-item';
-        item.innerHTML = `
-          <div>
-            <div class="quiz-type-name">${type.emoji} ${type.name}</div>
-            <div class="quiz-type-details" style="font-size: 0.9rem; opacity: 0.7; margin-top: 4px;">
-              ${data.correct} / ${data.total} correct
-            </div>
-          </div>
-          <div class="quiz-type-accuracy">${accuracy}%</div>
-        `;
-
-        const progressBar = document.createElement('div');
-        progressBar.className = 'progress-bar';
-        progressBar.innerHTML = `<div class="progress-fill" style="width: ${accuracy}%"></div>`;
-
-        const wrapper = document.createElement('div');
-        wrapper.appendChild(item);
-        wrapper.appendChild(progressBar);
-        wrapper.style.marginBottom = '12px';
-
-        container.appendChild(wrapper);
-      });
-    }
-
-    // Display quiz history
-    function displayHistory(history) {
-      const container = document.getElementById('history-list');
-      container.innerHTML = '';
-
-      if (history.length === 0) {
-        container.innerHTML = '<div class="no-data">No quiz history yet. Start playing to see your history!</div>';
-        return;
-      }
-
-      history.slice(0, 20).forEach(item => {
-        const div = document.createElement('div');
-        div.className = `history-item ${item.correct ? 'correct' : 'incorrect'}`;
-
-        const date = new Date(item.timestamp);
-        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-        div.innerHTML = `
-          <div class="history-info">
-            <div class="history-country">${item.country}</div>
-            <div class="history-type">${item.quizType} • ${timeStr}</div>
-          </div>
-          <div class="history-result">${item.correct ? '✓' : '✗'}</div>
-        `;
-
-        container.appendChild(div);
-      });
-    }
-
-    // Display country statistics
-    function displayCountryStats(byCountry) {
-      const container = document.getElementById('country-stats-list');
-      container.innerHTML = '';
-
-      // Find countries with low accuracy
-      const countryArray = Object.entries(byCountry)
-        .map(([name, data]) => ({
-          name,
-          accuracy: data.total > 0 ? (data.correct / data.total) * 100 : 0,
-          total: data.total
-        }))
-        .filter(c => c.total >= 2) // Only show countries with at least 2 attempts
-        .sort((a, b) => a.accuracy - b.accuracy);
-
-      if (countryArray.length === 0) {
-        container.innerHTML = '<div class="no-data">Play more quizzes to see which countries you struggle with!</div>';
-        return;
-      }
-
-      countryArray.slice(0, 10).forEach(country => {
-        const div = document.createElement('div');
-        div.className = 'country-stat-item';
-        div.innerHTML = `
-          <div class="country-name">${country.name}</div>
-          <div class="country-accuracy">${Math.round(country.accuracy)}% (${country.total} attempts)</div>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    // Review button click
-    document.getElementById('review-button').addEventListener('click', async () => {
-      try {
-        const missedQuestions = await StorageManager.getMissedQuestions();
-
-        if (missedQuestions.length === 0) {
-          alert('No missed questions to review!');
-          return;
-        }
-
-        // Set flag to start review mode
-        await StorageManager.setStartReviewMode(true);
-
-        // Show message to user
-        alert(`Review mode will start when you open the extension popup. You have ${missedQuestions.length} question(s) to review.`);
-
-        // Close the stats window
-        window.close();
-      } catch (error) {
-        console.error('Error starting review mode:', error);
-        alert('Error starting review mode. Please try again.');
-      }
-    });
-
-    // Clear missed questions
-    document.getElementById('clear-missed').addEventListener('click', async () => {
-      if (!confirm('Are you sure you want to clear all missed questions?')) {
-        return;
-      }
-
-      try {
-        await StorageManager.clearMissedQuestions();
-        document.getElementById('missed-count').textContent = '0';
-        alert('Missed questions cleared!');
-      } catch (error) {
-        console.error('Error clearing missed questions:', error);
-        alert('Error clearing missed questions');
-      }
-    });
-
-    // Reset all statistics
-    document.getElementById('reset-all').addEventListener('click', async () => {
-      if (!confirm('⚠️ WARNING: This will delete ALL your statistics, progress, and settings.\n\nAre you absolutely sure?')) {
-        return;
-      }
-
-      try {
-        console.log('Resetting all statistics...');
-        await StorageManager.resetStats();
-        console.log('Reset complete. Reloading page...');
-        alert('All statistics reset! The page will reload.');
-        window.location.reload();
-      } catch (error) {
-        console.error('Error resetting stats:', error);
-        alert('Error resetting statistics: ' + error.message);
-      }
-    });
-
-    // Reload page
-    document.getElementById('reload-page').addEventListener('click', () => {
-      console.log('Reloading page...');
-      window.location.reload();
-    });
-
-    // Apply theme
-    (async () => {
-      try {
-        const settings = await StorageManager.getSettings();
-        document.body.classList.remove('theme-light', 'theme-dark');
-        document.body.classList.add(`theme-${settings.theme || 'light'}`);
-      } catch (error) {
-        console.error('Error loading theme:', error);
-      }
-    })();
-  </script>
+  <script src="js/stats.js"></script>
 </body>
 </html>

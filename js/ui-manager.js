@@ -35,6 +35,7 @@ class UIManager {
       // Settings and navigation
       settingsButton: document.getElementById('settings-button'),
       reviewButton: document.getElementById('review-button'),
+      statsButton: document.getElementById('stats-button'),
 
       // Timer
       timerContainer: document.getElementById('timer-container'),
@@ -85,6 +86,7 @@ class UIManager {
     buttons.forEach(({ element, type }) => {
       if (element) {
         element.classList.toggle(UI_CLASSES.ACTIVE, type === quizType);
+        element.setAttribute('aria-pressed', String(type === quizType));
       }
     });
   }
@@ -126,8 +128,8 @@ class UIManager {
       console.error('Failed to load flag:', question.correctCountry.flag);
       img.alt = 'Flag failed to load';
     };
+    img.alt = 'Flag to identify';
     img.src = question.correctCountry.flag;
-    img.alt = `Flag of ${question.correctCountry.name}`;
 
     this.renderOptions(question.options.map(country => ({
       text: country.name,
@@ -165,20 +167,14 @@ class UIManager {
     this.elements.optionsContainer.style.pointerEvents = 'auto';
 
     options.forEach((option, index) => {
-      const button = document.createElement('div');
+      const button = document.createElement('button');
+      button.type = 'button';
       button.className = 'option-button';
-      button.setAttribute('role', 'button');
-      button.setAttribute('tabindex', '0');
-      button.setAttribute('aria-label', `Option ${index + 1}`);
       button.dataset.value = option.value;
 
       if (option.isFlag) {
         const img = document.createElement('img');
-        img.src = option.flagUrl;
         img.alt = `Flag option ${index + 1}`;
-        img.style.width = '100%';
-        img.style.maxHeight = '50px';
-        img.style.objectFit = 'contain';
 
         // Show loading state
         button.classList.add(UI_CLASSES.LOADING);
@@ -187,6 +183,7 @@ class UIManager {
           button.classList.remove(UI_CLASSES.LOADING);
           img.alt = 'Failed to load flag';
         };
+        img.src = option.flagUrl;
 
         button.appendChild(img);
       } else {
@@ -198,6 +195,11 @@ class UIManager {
 
       this.elements.optionsContainer.appendChild(button);
     });
+
+    // Keep keyboard users with the question after activating Next or a mode.
+    if (document.activeElement?.matches('#next-button, .quiz-button, #review-button')) {
+      this.elements.quizContent.focus({ preventScroll: true });
+    }
   }
 
   /**
@@ -207,28 +209,34 @@ class UIManager {
    * @param {string} funFact - Fun fact about the country
    */
   showFeedback(correct, correctAnswer, funFact = null) {
-    this.elements.feedback.classList.remove(UI_CLASSES.HIDDEN);
-    this.elements.optionsContainer.style.pointerEvents = 'none';
-
-    if (correct) {
-      let feedbackHtml = '<div class="feedback-title">✓ Correct!</div>';
-      if (funFact) {
-        feedbackHtml += `<div class="fun-fact">${funFact}</div>`;
-      }
-      this.elements.feedback.innerHTML = feedbackHtml;
-      this.elements.feedback.className = 'feedback-correct';
-      this.elements.feedback.setAttribute('aria-live', 'polite');
-      this.elements.feedback.setAttribute('aria-label', 'Correct answer');
-    } else {
-      let feedbackHtml = `<div class="feedback-title">✗ Incorrect</div>`;
-      feedbackHtml += `<div class="correct-answer">The correct answer is: <strong>${correctAnswer}</strong></div>`;
-      if (funFact) {
-        feedbackHtml += `<div class="fun-fact">${funFact}</div>`;
-      }
-      this.elements.feedback.innerHTML = feedbackHtml;
-      this.elements.feedback.className = 'feedback-incorrect';
-      this.elements.feedback.setAttribute('aria-live', 'assertive');
-      this.elements.feedback.setAttribute('aria-label', `Incorrect. The correct answer is ${correctAnswer}`);
+    const feedback = this.elements.feedback;
+    const focusedAnswer = this.elements.optionsContainer.contains(document.activeElement);
+    this.elements.optionsContainer.querySelectorAll('.option-button').forEach(button => {
+      button.disabled = true;
+    });
+    feedback.replaceChildren();
+    feedback.className = correct ? 'feedback-correct' : 'feedback-incorrect';
+    feedback.setAttribute('role', 'status');
+    feedback.setAttribute('aria-live', 'polite');
+    feedback.removeAttribute('aria-label');
+    const title = document.createElement('div');
+    title.className = 'feedback-title';
+    title.textContent = correct ? '✓ Correct!' : '✗ Incorrect';
+    feedback.appendChild(title);
+    if (!correct) {
+      const answer = document.createElement('div');
+      answer.className = 'correct-answer';
+      answer.textContent = `The correct answer is: ${correctAnswer}`;
+      feedback.appendChild(answer);
+    }
+    if (funFact) {
+      const fact = document.createElement('div');
+      fact.className = 'fun-fact';
+      fact.textContent = funFact;
+      feedback.appendChild(fact);
+    }
+    if (focusedAnswer) {
+      this.elements.nextButton?.focus({ preventScroll: true });
     }
   }
 
@@ -236,7 +244,7 @@ class UIManager {
    * Hide feedback
    */
   hideFeedback() {
-    this.elements.feedback.classList.add(UI_CLASSES.HIDDEN);
+    this.elements.feedback?.classList.add(UI_CLASSES.HIDDEN);
   }
 
   /**
@@ -392,9 +400,22 @@ class UIManager {
    * @param {string} message - Error message
    */
   showError(message) {
-    this.elements.feedback.classList.remove(UI_CLASSES.HIDDEN);
-    this.elements.feedback.innerHTML = `<div class="error-message">⚠ ${message}</div>`;
-    this.elements.feedback.className = 'feedback-error';
+    this.showMessage(message, true);
+  }
+
+  /** Show information without marking or disabling the current answer. */
+  showNotice(message) {
+    this.showMessage(message, false);
+  }
+
+  showMessage(message, isError) {
+    const feedback = this.elements.feedback || document.getElementById('feedback');
+    if (!feedback) return;
+    feedback.className = isError ? 'feedback-error' : 'feedback-notice';
+    feedback.setAttribute('role', isError ? 'alert' : 'status');
+    feedback.setAttribute('aria-live', isError ? 'assertive' : 'polite');
+    feedback.removeAttribute('aria-label');
+    feedback.textContent = message;
   }
 }
 

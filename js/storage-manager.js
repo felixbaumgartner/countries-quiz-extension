@@ -3,6 +3,20 @@
  */
 
 class StorageManager {
+  // Coordinate read/modify/write operations across popup, settings and worker.
+  static withWriteLock(operation) {
+    return navigator.locks.request('countries-quiz-storage', operation);
+  }
+
+  // The worker owns the write so closing the toolbar popup cannot cancel it.
+  static async submitAnswer(correct, quizType, country, userAnswer, correctAnswer, isReview) {
+    const response = await chrome.runtime.sendMessage({
+      type: 'record-answer', correct, quizType, country, userAnswer, correctAnswer, isReview
+    });
+    if (!response?.ok) throw new Error(response?.error || 'Could not save answer');
+    return response.scores;
+  }
+
   /**
    * Get data from Chrome storage
    * @param {string|string[]} keys - Storage key(s) to retrieve
@@ -94,7 +108,11 @@ class StorageManager {
    * @param {string} correctAnswer - Correct answer
    * @returns {Promise<Object>} Updated scores
    */
-  static async updateScore(correct, quizType, country, userAnswer, correctAnswer) {
+  static async updateScore(correct, quizType, country, userAnswer, correctAnswer, isReview = false) {
+    return this.withWriteLock(() => this.recordAnswer(correct, quizType, country, userAnswer, correctAnswer, isReview));
+  }
+
+  static async recordAnswer(correct, quizType, country, userAnswer, correctAnswer, isReview) {
     try {
       const [score, streak, totalCorrect, totalQuestions, stats, missedQuestions] = await Promise.all([
         this.getScore(),
@@ -140,7 +158,14 @@ class StorageManager {
         stats.quizHistory = stats.quizHistory.slice(0, QUIZ_CONFIG.MAX_HISTORY_LENGTH);
       }
 
-      // Track missed questions
+      // Resolve review entries in the same write as the score, with no duplicates.
+      if (!correct || isReview) {
+        for (let index = missedQuestions.length - 1; index >= 0; index--) {
+          if (missedQuestions[index].country === country.name && missedQuestions[index].quizType === quizType) {
+            missedQuestions.splice(index, 1);
+          }
+        }
+      }
       if (!correct) {
         const missedQuestion = {
           quizType,
@@ -189,7 +214,16 @@ class StorageManager {
    */
   static async getSettings() {
     const result = await this.get(STORAGE_KEYS.SETTINGS);
-    return result[STORAGE_KEYS.SETTINGS] || DEFAULT_SETTINGS;
+    const settings = { ...DEFAULT_SETTINGS, ...result[STORAGE_KEYS.SETTINGS] };
+    if (![...Object.values(DIFFICULTY), 'all'].includes(settings.difficulty)) settings.difficulty = DEFAULT_SETTINGS.difficulty;
+    if (!Object.values(REGIONS).includes(settings.region)) settings.region = DEFAULT_SETTINGS.region;
+    if (!Object.values(THEMES).includes(settings.theme)) settings.theme = DEFAULT_SETTINGS.theme;
+    if (typeof settings.soundEnabled !== 'boolean') settings.soundEnabled = DEFAULT_SETTINGS.soundEnabled;
+    if (typeof settings.timedMode !== 'boolean') settings.timedMode = DEFAULT_SETTINGS.timedMode;
+    if (!Number.isInteger(settings.timerDuration) || settings.timerDuration < 5 || settings.timerDuration > 60) {
+      settings.timerDuration = DEFAULT_SETTINGS.timerDuration;
+    }
+    return settings;
   }
 
   /**
@@ -198,10 +232,12 @@ class StorageManager {
    * @returns {Promise<void>}
    */
   static async updateSettings(settings) {
-    const currentSettings = await this.getSettings();
-    const newSettings = { ...currentSettings, ...settings };
-    await this.set({ [STORAGE_KEYS.SETTINGS]: newSettings });
-    return newSettings;
+    return this.withWriteLock(async () => {
+      const currentSettings = await this.getSettings();
+      const newSettings = { ...currentSettings, ...settings };
+      await this.set({ [STORAGE_KEYS.SETTINGS]: newSettings });
+      return newSettings;
+    });
   }
 
   /**
@@ -228,7 +264,10 @@ class StorageManager {
    */
   static async getMissedQuestions() {
     const result = await this.get(STORAGE_KEYS.MISSED_QUESTIONS);
-    return result[STORAGE_KEYS.MISSED_QUESTIONS] || [];
+    const questions = result[STORAGE_KEYS.MISSED_QUESTIONS];
+    return Array.isArray(questions) ? questions.filter(question =>
+      question && typeof question.country === 'string' && Object.values(QUIZ_TYPES).includes(question.quizType)
+    ) : [];
   }
 
   /**
@@ -236,7 +275,10 @@ class StorageManager {
    * @returns {Promise<void>}
    */
   static async clearMissedQuestions() {
-    await this.set({ [STORAGE_KEYS.MISSED_QUESTIONS]: [] });
+    await this.withWriteLock(() => this.set({
+      [STORAGE_KEYS.MISSED_QUESTIONS]: [],
+      [STORAGE_KEYS.START_REVIEW_MODE]: false
+    }));
   }
 
   /**
@@ -246,23 +288,12 @@ class StorageManager {
    * @returns {Promise<void>}
    */
   static async removeMissedQuestion(countryName, quizType) {
-    const missedQuestions = await this.getMissedQuestions();
-    console.log('Attempting to remove missed question:', { countryName, quizType });
-    console.log('Current missed questions:', missedQuestions.length);
-
-    // Find and remove the first matching question
-    const index = missedQuestions.findIndex(
-      q => q.country === countryName && q.quizType === quizType
-    );
-
-    if (index !== -1) {
-      console.log('Found missed question at index:', index, missedQuestions[index]);
-      missedQuestions.splice(index, 1);
-      await this.set({ [STORAGE_KEYS.MISSED_QUESTIONS]: missedQuestions });
-      console.log('Successfully removed. Remaining:', missedQuestions.length);
-    } else {
-      console.log('Missed question not found in storage');
-    }
+    return this.withWriteLock(async () => {
+      const missedQuestions = await this.getMissedQuestions();
+      await this.set({ [STORAGE_KEYS.MISSED_QUESTIONS]: missedQuestions.filter(
+        question => question.country !== countryName || question.quizType !== quizType
+      ) });
+    });
   }
 
   /**
@@ -270,11 +301,12 @@ class StorageManager {
    * @returns {Promise<void>}
    */
   static async resetStats() {
-    await this.set({
+    await this.withWriteLock(() => this.set({
       [STORAGE_KEYS.SCORE]: 0,
       [STORAGE_KEYS.STREAK]: 0,
       [STORAGE_KEYS.TOTAL_CORRECT]: 0,
       [STORAGE_KEYS.TOTAL_QUESTIONS]: 0,
+      [STORAGE_KEYS.START_REVIEW_MODE]: false,
       [STORAGE_KEYS.STATS]: {
         byQuizType: {
           capitals: { correct: 0, total: 0 },
@@ -286,7 +318,7 @@ class StorageManager {
         startDate: new Date().toISOString()
       },
       [STORAGE_KEYS.MISSED_QUESTIONS]: []
-    });
+    }));
   }
 
   /**
@@ -316,6 +348,10 @@ class StorageManager {
    * @returns {Promise<void>}
    */
   static async initializeStorage() {
+    return this.withWriteLock(() => this.initializeDefaults());
+  }
+
+  static async initializeDefaults() {
     console.log('Initializing storage...');
     const data = await this.get([
       STORAGE_KEYS.SCORE,
