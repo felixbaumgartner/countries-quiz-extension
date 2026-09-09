@@ -5,6 +5,7 @@
   const controls = [...document.querySelectorAll('select, input, button')];
   let saveQueue = Promise.resolve();
   let lastSavedDuration = DEFAULT_SETTINGS.timerDuration;
+  let settingsRevision = 0;
 
   function notify(message, isError = false) {
     status.classList.toggle('error', isError);
@@ -17,6 +18,7 @@
   }
 
   function saveSettings() {
+    const revision = ++settingsRevision;
     const timedMode = document.getElementById('timed-mode').checked;
     let duration = Number(timer.value);
     if (!timer.value.trim() || !Number.isInteger(duration) || duration < 5 || duration > 60) {
@@ -37,16 +39,19 @@
       timerDuration: duration,
       soundEnabled: document.getElementById('sound-enabled').checked
     };
-    // Preserve change order when a user changes several controls quickly.
+    notify('Saving settings…');
+    // Preserve write order; only the latest edit owns the form's status.
     saveQueue = saveQueue.then(async () => {
       try {
         await StorageManager.updateSettings(settings);
         lastSavedDuration = settings.timerDuration;
         applyTheme(settings.theme);
-        notify('Settings saved.');
+        if (revision === settingsRevision) notify('Settings saved.');
       } catch (error) {
         console.error('Error saving settings:', error);
-        notify('Could not save your settings. Change the setting again to retry.', true);
+        if (revision === settingsRevision) {
+          notify('Could not save your settings. Change the setting again to retry.', true);
+        }
       }
     });
   }

@@ -85,3 +85,19 @@ test('invalid stored duration falls back to the default when disabling timed mod
   assert.equal(page.writes[0].timerDuration, 10);
   assert.equal(page.writes[0].timedMode, false);
 });
+
+test('a pending save cannot overwrite a newer validation error', async () => {
+  for (const fails of [false, true]) {
+    const page = await loadSettings(20);
+    let finish;
+    page.storage.updateSettings = () => new Promise((resolve, reject) => {
+      finish = () => fails ? reject(new Error('Storage unavailable')) : resolve();
+    });
+    await page.change('timer-duration', '30');
+    await page.change('timer-duration', '');
+    assert.match(page.elements['page-status'].textContent, /whole number/);
+    finish();
+    await settle();
+    assert.match(page.elements['page-status'].textContent, /whole number/);
+  }
+});
